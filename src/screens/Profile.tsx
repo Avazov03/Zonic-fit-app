@@ -7,14 +7,15 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
-  Settings, Bell, X, MapPin, Clock, Zap, Target, Trophy, 
+  Settings, Bell, X, MapPin, Clock, Zap, Target, Trophy, Mic, 
   ChevronRight, Activity, TrendingUp, Heart, Flame, Shield, Award,
   Footprints, Dumbbell, Bike, PersonStanding, Timer, ChevronLeft, Share2,
   Map, Compass, Globe, Crown, Navigation, Filter, Users, Sword, Flag, MessageSquare, Star, LayoutGrid, Info, Hexagon,
   MoreHorizontal, Plus, Lock, Send, Search, Instagram, Link as LinkIcon,
   Smartphone, Watch, Volume2, Languages, Trash2, EyeOff, UserCheck, Link2, Link2Off,
   User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Headphones, Check, Quote,
-  Battery, Bluetooth, AlertTriangle, VolumeX, Volume1, Volume, RefreshCw, Sparkles
+  Battery, Bluetooth, AlertTriangle, VolumeX, Volume1, Volume, RefreshCw, Sparkles,
+  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/src/lib/utils";
@@ -402,6 +403,415 @@ const AchievementDetails: React.FC<AchievementDetailsProps> = ({ achievement, on
   );
 };
 
+const MARATHON_PLAN_DATA = [
+  {
+    week: 1,
+    title: "Chidamlilikni barpo etish",
+    focus: "Oson yugurish va ritm",
+    days: [
+      { day: "Du", type: "Oson", dist: "4km", pace: "6'15\"", completed: true },
+      { day: "Se", type: "Tezlik", dist: "3km", pace: "5'10\"", completed: true },
+      { day: "Ch", type: "Dam", dist: "OFF", pace: "-", completed: false },
+      { day: "Pa", type: "Oson", dist: "4km", pace: "6'15\"", completed: false },
+      { day: "Ju", type: "Oson", dist: "3km", pace: "6'20\"", completed: false },
+      { day: "Sh", type: "Uzoq", dist: "6km", pace: "6'30\"", completed: false },
+      { day: "Ya", type: "Dam", dist: "OFF", pace: "-", completed: false },
+    ]
+  },
+  {
+    week: 2,
+    title: "Aerobik kuchayish",
+    focus: "Masofani asta-sekin oshirish",
+    days: [
+      { day: "Du", type: "Oson", dist: "5km", pace: "6'10\"", completed: false },
+      { day: "Se", type: "Interval", dist: "4km", pace: "5'00\"", completed: false },
+      { day: "Ch", type: "Dam", dist: "OFF", pace: "-", completed: false },
+      { day: "Pa", type: "Oson", dist: "5km", pace: "6'10\"", completed: false },
+      { day: "Ju", type: "Oson", dist: "4km", pace: "6'15\"", completed: false },
+      { day: "Sh", type: "Uzoq", dist: "8km", pace: "6'25\"", completed: false },
+      { day: "Ya", type: "Dam", dist: "OFF", pace: "-", completed: false },
+    ]
+  },
+  {
+    week: 3,
+    title: "Tezlik va quvvat",
+    focus: "Tempo yugurish va oraliqlar",
+    days: [
+      { day: "Du", type: "Oson", dist: "6km", pace: "6'05\"", completed: false },
+      { day: "Se", type: "Tempo", dist: "5km", pace: "5'20\"", completed: false },
+      { day: "Ch", type: "Dam", dist: "OFF", pace: "-", completed: false },
+      { day: "Pa", type: "Oson", dist: "6km", pace: "6'05\"", completed: false },
+      { day: "Ju", type: "Oson", dist: "5km", pace: "6'10\"", completed: false },
+      { day: "Sh", type: "Uzoq", dist: "10km", pace: "6'20\"", completed: false },
+      { day: "Ya", type: "Dam", dist: "OFF", pace: "-", completed: false },
+    ]
+  },
+  {
+    week: 4,
+    title: "Tiklanish haftasi",
+    focus: "Yengil yuklama",
+    days: [
+      { day: "Du", type: "Oson", dist: "4km", pace: "6'30\"", completed: false },
+      { day: "Se", type: "Oson", dist: "4km", pace: "6'30\"", completed: false },
+      { day: "Ch", type: "Dam", dist: "OFF", pace: "-", completed: false },
+      { day: "Pa", type: "Oson", dist: "4km", pace: "6'30\"", completed: false },
+      { day: "Ju", type: "Dam", dist: "OFF", pace: "-", completed: false },
+      { day: "Sh", type: "Oson", dist: "6km", pace: "6'40\"", completed: false },
+      { day: "Ya", type: "Dam", dist: "OFF", pace: "-", completed: false },
+    ]
+  }
+];
+
+const MarathonPlanModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-2xl flex justify-center overflow-hidden"
+      >
+        <motion.div 
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          className="w-full max-w-[450px] bg-[#0A0A0F] border-t border-white/10 rounded-t-[40px] flex flex-col mt-20"
+        >
+          {/* Header */}
+          <div className="p-8 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-black italic tracking-tight text-white mb-1">MARAFON REJASI</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#FF005C] animate-pulse" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#FF005C]">Step-by-step Transformation</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white active:scale-90 transition-all border border-white/5">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="px-8 mb-8">
+            <div className="grid grid-cols-3 gap-4 p-4 bg-white/[0.03] rounded-3xl border border-white/5">
+              <div className="text-center">
+                <p className="text-[8px] font-black uppercase text-white/30 mb-1">Davomiyligi</p>
+                <p className="text-sm font-black text-white">8 Hafta</p>
+              </div>
+              <div className="text-center border-x border-white/5">
+                <p className="text-[8px] font-black uppercase text-white/30 mb-1">Intensivlik</p>
+                <p className="text-sm font-black text-primary">Yuqori</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[8px] font-black uppercase text-white/30 mb-1">Maqsad</p>
+                <p className="text-sm font-black text-[#FF005C]">21.1 KM</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-8 pb-32 space-y-8 no-scrollbar">
+            {MARATHON_PLAN_DATA.map((weekData) => (
+              <div key={weekData.week} className="relative">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center text-white font-black italic shadow-lg shadow-[#FF005C]/20">
+                    {weekData.week}
+                  </div>
+                  <div>
+                    <h3 className="text-white text-xs font-black uppercase tracking-widest">{weekData.title}</h3>
+                    <p className="text-white/40 text-[9px] font-bold italic">{weekData.focus}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pl-4 border-l-2 border-white/5">
+                  {weekData.days.map((day, idx) => (
+                    <div 
+                      key={idx}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all flex items-center justify-between",
+                        day.completed 
+                          ? "bg-primary/10 border-primary/20" 
+                          : day.dist === 'OFF' 
+                            ? "bg-white/[0.02] border-white/5 opacity-50"
+                            : "bg-white/[0.05] border-white/10"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black",
+                          day.completed ? "bg-primary text-black" : "bg-white/10 text-white/40"
+                        )}>
+                          {day.day}
+                        </div>
+                        <div>
+                          <p className={cn(
+                            "text-[10px] font-black uppercase tracking-wider",
+                            day.completed ? "text-primary" : "text-white"
+                          )}>
+                            {day.dist === 'OFF' ? 'Dam olish kuni' : `${day.type}: ${day.dist}`}
+                          </p>
+                          {day.dist !== 'OFF' && (
+                            <p className="text-[8px] font-bold text-white/30 uppercase">Maqsad temp: {day.pace}</p>
+                          )}
+                        </div>
+                      </div>
+                      {day.completed && (
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="w-3.5 h-3.5 text-black" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            
+            {/* Locked Weeks */}
+            <div className="p-8 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center justify-center text-center opacity-40">
+              <Lock className="w-8 h-8 text-white/20 mb-4" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Hafta 5-8 tez orada ochiladi</p>
+              <p className="text-[8px] font-bold text-white/20 mt-1 italic">Dastlabki 4 haftani yakunlang</p>
+            </div>
+          </div>
+          
+          {/* Action Footer */}
+          <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent">
+             <button className="w-full py-5 bg-primary text-black font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_10px_30px_rgba(204,255,0,0.3)] active:scale-95 transition-all text-xs">
+               Keyingi mashg'ulotni boshlash
+             </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onClearHistory }: { 
+  isOpen: boolean, 
+  onClose: () => void,
+  messages: {role: 'user' | 'model', text: string}[],
+  onSendMessage: (msg: string) => void,
+  isTyping: boolean,
+  onClearHistory: () => void
+}) => {
+  const [inputText, setInputText] = useState("");
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  // Speech Recognition Setup
+  useEffect(() => {
+    if (typeof window !== 'undefined' && ('WebkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'uz-UZ';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputText(transcript);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, []);
+
+  // Text to Speech for AI Responses
+  useEffect(() => {
+    if (isVoiceActive && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === 'model' && lastMsg.text) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(lastMsg.text);
+        utterance.lang = 'uz-UZ';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+  }, [messages, isVoiceActive]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      setInputText("");
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 z-[110] bg-black/60 backdrop-blur-2xl flex justify-center overflow-hidden"
+      >
+        <motion.div 
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          className="w-full max-w-[450px] bg-[#0A0A0F] border-t border-white/10 rounded-t-[40px] flex flex-col mt-10"
+        >
+          {/* Header */}
+          <div className="p-6 flex items-center justify-between border-b border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center shadow-lg shadow-[#FF005C]/20">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-white text-sm font-black uppercase tracking-widest leading-none">AI Murabbiy</h2>
+                <div className="flex items-center gap-1 mt-1">
+                   <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                   <p className="text-[8px] font-black uppercase tracking-widest text-primary/60">Online • Live Support</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  if (confirm("Chat tarixini tozalashni xohlaysizmi?")) {
+                    onClearHistory();
+                  }
+                }}
+                className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-all border border-white/10"
+                title="Tarixni tozalash"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  setIsVoiceActive(!isVoiceActive);
+                  if (isVoiceActive) window.speechSynthesis.cancel();
+                }}
+                className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all border",
+                  isVoiceActive ? "bg-primary/20 border-primary/40 text-primary" : "bg-white/5 border-white/10 text-white/40"
+                )}
+              >
+                {isVoiceActive ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </button>
+              <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white active:scale-90 transition-all border border-white/10">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+            {messages.map((msg, i) => (
+              <div key={i} className={cn("flex flex-col", msg.role === 'user' ? "items-end" : "items-start")}>
+                <div className={cn(
+                  "max-w-[85%] p-4 rounded-2xl text-[11px] leading-relaxed",
+                  msg.role === 'user' 
+                    ? "bg-[#FF005C] text-white rounded-tr-none shadow-[0_5px_15px_rgba(255,0,92,0.2)]" 
+                    : "bg-white/5 text-white/80 border border-white/10 rounded-tl-none"
+                )}>
+                  {msg.text}
+                </div>
+                <div className="flex items-center gap-2 mt-2 px-1">
+                  <span className="text-[7px] font-black uppercase text-white/20">
+                    {msg.role === 'user' ? "Siz" : "Murabbiy"}
+                  </span>
+                  {msg.role === 'model' && (
+                    <button 
+                      onClick={() => {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(msg.text);
+                        utterance.lang = 'uz-UZ';
+                        window.speechSynthesis.speak(utterance);
+                      }}
+                      className="text-white/20 hover:text-white/40 transition-colors"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex flex-col items-start">
+                <div className="bg-white/5 text-white/40 border border-white/10 p-4 rounded-2xl rounded-tl-none">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/20 animate-bounce" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/20 animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/20 animate-bounce [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input Area */}
+          <div className="p-6 bg-black/40 border-t border-white/5 pb-10">
+            <div className="relative flex items-center gap-3">
+              <div className="relative flex-1">
+                <input 
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && inputText.trim()) {
+                      onSendMessage(inputText);
+                      setInputText("");
+                    }
+                  }}
+                  placeholder={isListening ? "Eshityapman..." : "Savolingizni yozing..."}
+                  className={cn(
+                    "w-full bg-[#15151F] border rounded-2xl py-4 pl-5 pr-14 text-white text-[11px] font-bold focus:outline-none transition-all placeholder:text-white/20",
+                    isListening ? "border-primary shadow-[0_0_15px_rgba(204,255,0,0.2)]" : "border-white/10 focus:border-primary/50"
+                  )}
+                />
+                <button 
+                  onClick={toggleListening}
+                  className={cn(
+                    "absolute right-2 top-2 bottom-2 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                    isListening ? "bg-primary text-black" : "bg-white/5 text-white/40 active:scale-90"
+                  )}
+                >
+                  <Mic className={cn("w-4 h-4", isListening && "animate-pulse")} />
+                </button>
+              </div>
+              <button 
+                onClick={() => {
+                  if (inputText.trim()) {
+                    onSendMessage(inputText);
+                    setInputText("");
+                  }
+                }}
+                disabled={!inputText.trim()}
+                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center text-white shadow-lg active:scale-90 transition-all disabled:opacity-30 disabled:grayscale"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const AllAchievementsModal = ({ isOpen, onClose, onSelect }: { isOpen: boolean, onClose: () => void, onSelect: (ach: any) => void }) => {
   if (!isOpen) return null;
 
@@ -522,6 +932,12 @@ interface Goal {
   status: 'active' | 'completed';
 }
 
+const TRAINING_PARTNERS = [
+  { id: 1, name: "Alisher", level: 42, progress: 85, avatar: "https://i.pravatar.cc/150?u=1", status: 'running' },
+  { id: 2, name: "Malika", level: 38, progress: 72, avatar: "https://i.pravatar.cc/150?u=2", status: 'idle' },
+  { id: 3, name: "Sardor", level: 45, progress: 91, avatar: "https://i.pravatar.cc/150?u=3", status: 'running' },
+];
+
 const INITIAL_GOALS: Goal[] = [
   {
     id: 1,
@@ -537,6 +953,22 @@ const INITIAL_GOALS: Goal[] = [
     timeLeft: "2 kun qoldi",
     category: 'distance',
     type: 'weekly',
+    status: 'active'
+  },
+  {
+    id: 10,
+    title: "21km AI Marafon - 8 hafta",
+    subtitle: "0 / 21 km",
+    progress: 0,
+    current: 0,
+    total: 21,
+    unit: "km",
+    icon: <Award className="w-5 h-5" />,
+    color: "#FF005C",
+    reward: "2100 XP",
+    timeLeft: "8 hafta qoldi",
+    category: 'distance',
+    type: 'custom',
     status: 'active'
   },
   {
@@ -606,6 +1038,139 @@ const COMPLETED_GOALS: Goal[] = [
   }
 ];
 
+const WeatherModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const forecast = [
+    { day: "Dushanba", temp: 24, icon: <Sun className="w-6 h-6 text-yellow-400" />, condition: "Ochiq", wind: 12 },
+    { day: "Seshanba", temp: 26, icon: <Sun className="w-6 h-6 text-yellow-500" />, condition: "Issiq", wind: 8 },
+    { day: "Chorshanba", temp: 22, icon: <CloudRain className="w-6 h-6 text-blue-400" />, condition: "Yomg'ir", wind: 24 },
+    { day: "Payshanba", temp: 21, icon: <CloudRain className="w-6 h-6 text-blue-300" />, condition: "Yomg'ir", wind: 18 },
+    { day: "Juma", temp: 23, icon: <CloudRain className="w-6 h-6 text-blue-200" />, condition: "Bulutli", wind: 10 },
+    { day: "Shanba", temp: 25, icon: <Sun className="w-6 h-6 text-yellow-400" />, condition: "Ochiq", wind: 15 },
+    { day: "Yakshanba", temp: 27, icon: <Sun className="w-6 h-6 text-yellow-500" />, condition: "Juda Issiq", wind: 5 },
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]"
+          />
+          <motion.div 
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-[85vh] bg-[#0A0A0A] rounded-t-[40px] border-t border-white/10 z-[101] overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 right-0 p-6 flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00A3FF]/20 flex items-center justify-center border border-[#00A3FF]/20">
+                    <Sun className="w-6 h-6 text-[#00A3FF]" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black uppercase tracking-tight text-white">Ob-havo <span className="text-[#00A3FF]">AI</span></h2>
+                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Haftalik Bashorat • Toshkent</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5 text-white/60" />
+                </button>
+              </div>
+
+              {/* Main Content */}
+              <div className="flex-1 overflow-y-auto no-scrollbar pb-12">
+                {/* Today Card */}
+                <div className="bg-gradient-to-br from-[#00A3FF]/20 to-[#00A3FF]/5 rounded-[32px] p-8 border border-[#00A3FF]/20 mb-8 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-[#00A3FF]/10 blur-3xl rounded-full pointer-events-none" />
+                  <div className="flex items-center justify-between relative z-10">
+                    <div>
+                      <p className="text-[#00A3FF] text-[10px] font-black uppercase tracking-widest mb-2">Bugun</p>
+                      <h3 className="text-6xl font-black text-white">24°</h3>
+                      <p className="text-white/60 text-sm font-bold mt-2 italic">Minimal o'zgarishlar kutilmoqda</p>
+                    </div>
+                    <div className="w-24 h-24 rounded-[32px] bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl">
+                      <Sun className="w-12 h-12 text-yellow-400 animate-spin-slow" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/10 relative z-10">
+                    <div className="text-center">
+                      <Wind className="w-4 h-4 text-white/20 mx-auto mb-2" />
+                      <p className="text-[10px] font-black text-white uppercase">12 km/s</p>
+                      <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mt-1">Shamol</p>
+                    </div>
+                    <div className="text-center">
+                      <CloudRain className="w-4 h-4 text-white/20 mx-auto mb-2" />
+                      <p className="text-[10px] font-black text-white uppercase">0%</p>
+                      <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mt-1">Yomg'ir</p>
+                    </div>
+                    <div className="text-center">
+                      <Zap className="w-4 h-4 text-white/20 mx-auto mb-2" />
+                      <p className="text-[10px] font-black text-white uppercase">UV 6</p>
+                      <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mt-1">Index</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Advice Card */}
+                <div className="bg-[#CCFF00] rounded-[24px] p-5 mb-8 flex items-center gap-4 shadow-[0_15px_30px_rgba(204,255,0,0.15)]">
+                  <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-[#CCFF00]" />
+                  </div>
+                  <p className="text-black text-[11px] font-black leading-tight uppercase tracking-tight">
+                    AI MASLAHAT: Bugun havo yugurish uchun ideal. Namlik past, harorat muvozanatda. Marhamat!
+                  </p>
+                </div>
+
+                {/* Weekly List */}
+                <div className="space-y-3">
+                  <h4 className="text-white/30 text-[10px] font-black uppercase tracking-[0.2em] mb-4 px-2">7 Kunlik Bashorat</h4>
+                  {forecast.map((f, i) => (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      key={f.day} 
+                      className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5 hover:bg-white/[0.08] transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                          {f.icon}
+                        </div>
+                        <div>
+                          <p className="text-white text-xs font-black uppercase tracking-tight">{f.day}</p>
+                          <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest">{f.condition}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-black text-lg">{f.temp}°</p>
+                        <p className="text-[8px] font-bold text-[#00A3FF] uppercase tracking-widest">{f.wind} km/s</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Bottom Handle */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1 bg-white/10 rounded-full" />
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
 const GoalsModal = ({ 
   isOpen, 
   onClose, 
@@ -625,6 +1190,32 @@ const GoalsModal = ({
   initialTab?: 'active' | 'history' | 'new',
   initialPeriod?: string
 }) => {
+  // AI Audio Coach Speech Function
+  const speakMotivation = () => {
+    if (!('speechSynthesis' in window)) {
+      alert("Kechirasiz, sizning brauzeringiz ovozli funksiyani qo'llab-quvvatlamaydi.");
+      return;
+    }
+
+    const messages = [
+      "Ajoyib ketmoqdasiz! Nafas olishni unutmang.",
+      "Sizning chidamliligingiz hayratlanarli. Shunday davom eting!",
+      "Yarim yo'l bosib o'tildi. To'xtamang, marra yaqin!",
+      "Yurak urishi barqaror. Tempni bir oz oshirishingiz mumkin.",
+      "Bugungi mashg'ulot sizni ertangi yutug'ingizga yaqinlashtiradi."
+    ];
+
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    const utterance = new SpeechSynthesisUtterance(randomMessage);
+    
+    // O'zbek tili uchun moslash (agar tizimda bo'lsa)
+    utterance.lang = 'uz-UZ';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const [activeTab, setActiveTab] = useState<'active' | 'history' | 'new'>(initialTab || 'active');
   const [filter, setFilter] = useState<'all' | 'distance' | 'time' | 'calories' | 'xp'>('all');
   const [mainTab, setMainTab] = useState<'goals' | 'marathon'>(initialPeriod === 'Maxsus' ? 'marathon' : 'goals');
@@ -641,6 +1232,7 @@ const GoalsModal = ({
   const [marafonDurationUnit, setMarafonDurationUnit] = useState<'Hafta' | 'Oy'>('Hafta');
   const [marafonDaysPerWeek, setMarafonDaysPerWeek] = useState('3');
   const [isCalculated, setIsCalculated] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -693,12 +1285,16 @@ const GoalsModal = ({
     };
 
     setGoals((prev) => {
-      const idx = prev.findIndex(g => g.type === periodType && g.status === 'active');
-      if (idx > -1) {
-        const next = [...prev];
-        next[idx] = newGoal;
-        return next;
+      // For weekly and monthly, we usually want only one active goal of that type
+      if (periodType !== 'custom') {
+        const idx = prev.findIndex(g => g.type === periodType && g.status === 'active');
+        if (idx > -1) {
+          const next = [...prev];
+          next[idx] = newGoal;
+          return next;
+        }
       }
+      // For custom goals or if no existing weekly/monthly goal, just add it
       return [newGoal, ...prev];
     });
 
@@ -3409,8 +4005,103 @@ export default function Profile() {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [activeGoalSubTab, setActiveGoalSubTab] = useState("AI Marafon Rejalari");
-  const [activeChartIndex, setActiveChartIndex] = useState(0);
   const [activityTab, setActivityTab] = useState<"KM" | "HUDUD" | "QADAM">("KM");
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
+  const [isMarathonPlanModalOpen, setIsMarathonPlanModalOpen] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([
+    { role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Bugungi natijalaringiz haqida suhbatlashamizmi?" }
+  ]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeChartIndex, setActiveChartIndex] = useState(0);
+  const [waterIntake, setWaterIntake] = useState(1200); // ml
+  const WATER_GOAL = 3000;
+
+  const speakMotivation = () => {
+    if (!('speechSynthesis' in window)) {
+      alert("Kechirasiz, sizning brauzeringiz ovozli funksiyani qo'llab-quvvatlamaydi.");
+      return;
+    }
+
+    const messages = [
+      "Ajoyib ketmoqdasiz! Nafas olishni unutmang.",
+      "Sizning chidamliligingiz hayratlanarli. Shunday davom eting!",
+      "Yarim yo'l bosib o'tildi. To'xtamang, marra yaqin!",
+      "Yurak urishi barqaror. Tempni bir oz oshirishingiz mumkin.",
+      "Bugungi mashg'ulot sizni ertangi yutug'ingizga yaqinlashtiradi."
+    ];
+
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    const utterance = new SpeechSynthesisUtterance(randomMessage);
+    utterance.lang = 'uz-UZ';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const sendAIChatMessage = async (text: string) => {
+    if (!text.trim()) return;
+
+    // Add user message and a placeholder for the AI response
+    const newUserMsg = { role: 'user' as const, text };
+    setChatMessages(prev => [...prev, newUserMsg]);
+    setIsTyping(true);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
+      // Prepare context about user stats
+      const statsContext = `
+        User Stats:
+        - Distance: 47.3 km (Goal: 60km this week)
+        - Pace: 5'12" / km
+        - Heart Rate: 142 bpm
+        - Water Intake: ${waterIntake} ml / 3000 ml
+        - Active Goals: ${goals.map(g => g.title).join(", ")}
+        - Recent Achievement: Yunusobod Qiroli
+        - Recent PB: 1km in 4:12
+
+        Personality: You are a motivating, professional high-end sports coach. 
+        Language: Uzbek (O'zbekcha).
+        Response Style: Concise, encouraging, and insightful. Use emojis.
+      `;
+
+      // Start streaming for better perceived speed
+      const result = await ai.models.generateContentStream({
+        model: "gemini-3.1-flash-lite", // Using a faster lite model
+        contents: [
+          { role: 'user', parts: [{ text: statsContext }] },
+          ...chatMessages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+          { role: 'user', parts: [{ text: text }] }
+        ],
+        config: {
+          systemInstruction: "You are an expert AI Sports Coach for a running app called 'ZONIC'. Be helpful and motivating."
+        }
+      });
+
+      // Add a placeholder message for the AI
+      setChatMessages(prev => [...prev, { role: 'model', text: "" }]);
+      setIsTyping(false);
+
+      let fullText = "";
+      for await (const chunk of result) {
+        fullText += chunk.text;
+        setChatMessages(prev => {
+          const lastIdx = prev.length - 1;
+          const next = [...prev];
+          next[lastIdx] = { ...next[lastIdx], text: fullText };
+          return next;
+        });
+      }
+
+    } catch (error) {
+      console.error("Gemini Error:", error);
+      setChatMessages(prev => [...prev, { role: 'model', text: "Aloqa bilan bog'liq xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring." }]);
+      setIsTyping(false);
+    }
+  };
+
   const [stepGoal, setStepGoal] = useState(10000);
   const qadamChartRef = useRef<HTMLDivElement>(null);
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
@@ -3784,7 +4475,7 @@ export default function Profile() {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
+        model: "gemini-3.1-flash-tts-preview",
         contents: [{ parts: [{ text: `Say: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
@@ -3884,6 +4575,10 @@ export default function Profile() {
 
   return (
     <div className="flex h-full flex-col bg-[#050505] text-white overflow-hidden font-sans relative">
+      <WeatherModal 
+        isOpen={isWeatherModalOpen}
+        onClose={() => setIsWeatherModalOpen(false)}
+      />
       {/* Top News Ticker */}
       <AnimatePresence>
         {newsItems.length > 0 && (
@@ -5807,10 +6502,8 @@ export default function Profile() {
                 <div className="flex flex-col gap-4 mb-8">
                   {activeGoalSubTab === "AI Marafon Rejalari" && (
                     <div className="space-y-6">
-                      {/* Check if there is an active marathon goal */}
-                      {goals.find(g => g.type === 'custom' && g.title.includes('Marafon')) ? (
+                      {goals.find(g => g.type === 'custom' && g.title.includes('Marafon')) && (
                         <div className="space-y-4 animate-fade-in">
-                          {/* Active Marathon Status Card */}
                           {(() => {
                             const marathon = goals.find(g => g.type === 'custom' && g.title.includes('Marafon'))!;
                             return (
@@ -5885,7 +6578,7 @@ export default function Profile() {
                             
                             <button 
                               onClick={() => {
-                                // Redirect to training log or start a session
+                                setIsMarathonPlanModalOpen(true);
                               }}
                               className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 mt-8 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all"
                             >
@@ -5893,115 +6586,160 @@ export default function Profile() {
                             </button>
                           </div>
 
+                          {/* Audio Coach & Weather Modules */}
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* AI Audio Coach Module */}
+                            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 relative overflow-hidden group">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/20">
+                                  <Headphones className="w-4 h-4 text-primary" />
+                                </div>
+                                <span className="text-[8px] font-black text-primary uppercase tracking-widest animate-pulse">Live</span>
+                              </div>
+                              <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Audio Coach</h4>
+                              <p className="text-white/40 text-[8px] font-bold uppercase mb-4">Real-time motivatsiya</p>
+                              
+                              <div className="flex items-center gap-1 h-8 mb-4">
+                                {[0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4, 0.7, 0.9, 0.5].map((h, i) => (
+                                  <motion.div
+                                    key={i}
+                                    animate={{ 
+                                      height: isSpeaking 
+                                        ? [`${h * 40}%`, `${(1-h) * 100}%`, `${h * 40}%`] 
+                                        : [`${h * 20}%`, `${h * 30}%`, `${h * 20}%`] 
+                                    }}
+                                    transition={{ 
+                                      duration: isSpeaking ? 0.6 : 2, 
+                                      repeat: Infinity, 
+                                      delay: i * 0.05, 
+                                      ease: "easeInOut" 
+                                    }}
+                                    className={cn(
+                                      "flex-1 rounded-full min-w-[2px] transition-colors duration-500",
+                                      isSpeaking ? "bg-primary" : "bg-primary/30"
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                              
+                              <button 
+                                onClick={() => {
+                                  if (!isSpeaking) {
+                                    setIsSpeaking(true);
+                                    speakMotivation();
+                                    // Speech API doest have a robust onEnd in all browsers, so we simulate
+                                    setTimeout(() => setIsSpeaking(false), 4000);
+                                  }
+                                }}
+                                className={cn(
+                                  "w-full py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all",
+                                  isSpeaking ? "bg-white/10 text-white/40 cursor-not-allowed" : "bg-primary text-black"
+                                )}
+                              >
+                                {isSpeaking ? "Eshitilmoqda..." : "Tinglash"}
+                              </button>
+                            </div>
+
+                            {/* Smart Weather Advice Module */}
+                            <div 
+                              onClick={() => setIsWeatherModalOpen(true)}
+                              className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 relative overflow-hidden group cursor-pointer active:scale-95 transition-all"
+                            >
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="w-8 h-8 rounded-xl bg-[#00A3FF]/20 flex items-center justify-center border border-[#00A3FF]/20">
+                                  <Sun className="w-4 h-4 text-[#00A3FF]" />
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <span className="text-white font-black text-xs">24°C</span>
+                                  <span className="text-[7px] font-bold text-white/30 uppercase">Toshkent</span>
+                                </div>
+                              </div>
+                              
+                              <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Ob-havo AI</h4>
+                              
+                              <div className="flex gap-2 mb-3">
+                                <div className="flex-1 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                                  <Wind className="w-3 h-3 text-[#00A3FF]/60 mb-1" />
+                                  <p className="text-[8px] font-black text-white">12 km/s</p>
+                                </div>
+                                <div className="flex-1 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                                  <CloudRain className="w-3 h-3 text-[#00A3FF]/60 mb-1" />
+                                  <p className="text-[8px] font-black text-white">0%</p>
+                                </div>
+                              </div>
+
+                              <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/20 rounded-xl p-2">
+                                <p className="text-[8px] text-[#CCFF00] font-black uppercase leading-tight">
+                                  AI Tavsiya: Mashg'ulot uchun ideal!
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
                           {/* AI Coach Insight Section */}
                           <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] rounded-[32px] blur opacity-20 group-hover:opacity-40 transition-all" />
-                            <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 overflow-hidden">
-                              <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center shadow-lg">
+                            <div className="relative bg-[#0F0F1B] border border-white/10 rounded-[32px] p-6 overflow-hidden">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center shadow-lg shadow-[#FF005C]/20">
                                   <Sparkles className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
                                   <h4 className="text-white text-sm font-black uppercase tracking-widest">AI Murabbiy Tahlili</h4>
-                                  <p className="text-white/30 text-[8px] font-bold uppercase tracking-[0.2em]">O'tgan 7 kunlik natijalar asosida</p>
+                                  <p className="text-[#FF005C] text-[8px] font-black uppercase tracking-widest">Premium Insight</p>
                                 </div>
                               </div>
-
+                              
                               <div className="space-y-4">
                                 <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-2 h-2 rounded-full bg-[#CCFF00]" />
-                                    <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Yutuqlar</span>
-                                  </div>
-                                  <p className="text-xs text-white/60 leading-relaxed">
-                                    Sizning chidamlilik ko'rsatkichingiz <span className="text-[#CCFF00] font-black">+12%</span> ga oshdi. Suyuqlik ichish tartibiga rioya qilayotganingiz sezilmoqda.
+                                  <p className="text-[11px] text-white/70 leading-relaxed italic">
+                                    "Oxirgi 3 ta mashg'ulotingizda tempingiz barqarorlashganini ko'ryapman. Bu chidamlilik oshganidan dalolat beradi. Kelasi yugurishda masofani 1.5 km ga ko'paytirishingizni tavsiya qilaman."
                                   </p>
                                 </div>
-
-                                <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                                  <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-2 h-2 rounded-full bg-[#00A3FF]" />
-                                      <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Haftalik Trend</span>
-                                    </div>
-                                    <span className="text-[9px] font-bold text-[#CCFF00] uppercase tracking-widest">Rejadan oldinda</span>
-                                  </div>
-                                  
-                                  {/* Simple Trend Chart */}
-                                  <div className="flex items-end justify-between h-12 gap-1 px-1 mb-2">
-                                    {[
-                                      { h: 40, p: 45 }, { h: 60, p: 55 }, { h: 30, p: 35 }, 
-                                      { h: 80, p: 85 }, { h: 50, p: 65 }, { h: 70, p: 80 }, 
-                                      { h: 20, p: 0 }
-                                    ].map((bar, i) => (
-                                      <div key={i} className="flex-1 flex flex-col items-center gap-1 group/bar">
-                                        <div className="w-full relative flex items-end justify-center h-full">
-                                          {/* Plan bar (dashed/ghost) */}
-                                          <div 
-                                            className="w-full bg-white/5 rounded-t-sm absolute bottom-0" 
-                                            style={{ height: `${bar.p}%` }} 
-                                          />
-                                          {/* Actual bar */}
-                                          <div 
-                                            className="w-[60%] bg-gradient-to-t from-[#FF005C] to-[#8A2BE2] rounded-t-sm relative z-10 transition-all group-hover/bar:brightness-125" 
-                                            style={{ height: `${bar.h}%` }} 
-                                          />
-                                        </div>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                                    <p className="text-[7px] text-white/30 uppercase font-black mb-1">Tiklanish darajasi</p>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="h-full bg-primary w-[85%]" />
                                       </div>
-                                    ))}
+                                      <span className="text-[10px] font-black text-primary">85%</span>
+                                    </div>
                                   </div>
-                                  <div className="flex justify-between items-center text-[8px] font-bold text-white/20 uppercase tracking-tighter">
-                                    <span>Du</span>
-                                    <span>Se</span>
-                                    <span>Ch</span>
-                                    <span>Pa</span>
-                                    <span>Ju</span>
-                                    <span>Sh</span>
-                                    <span>Ya</span>
+                                  <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                                    <p className="text-[7px] text-white/30 uppercase font-black mb-1">Sharoitga moslashuv</p>
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="h-full bg-[#00A3FF] w-[72%]" />
+                                      </div>
+                                      <span className="text-[10px] font-black text-[#00A3FF]">72%</span>
+                                    </div>
                                   </div>
-                                </div>
-
-                                <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-2 h-2 rounded-full bg-[#FF005C]" />
-                                    <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Tavsiya</span>
-                                  </div>
-                                  <p className="text-xs text-white/60 leading-relaxed italic">
-                                    "Haftalik hajm rejasidan <span className="text-white font-bold">1.5 km</span> ga o'zib ketdingiz. Bugungi mashg'ulotni 'Recovery' (tiklanish) rejimida o'tkazishni tavsiya qilaman."
-                                  </p>
                                 </div>
                               </div>
-
-                              <div className="mt-6 flex items-center gap-4 px-2">
-                                <div className="flex-1">
-                                  <div className="flex justify-between mb-1">
-                                    <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Tayyorgarlik darajasi</span>
-                                    <span className="text-[9px] font-black text-[#00A3FF]">85%</span>
-                                  </div>
-                                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-[#00A3FF] w-[85%]" />
-                                  </div>
-                                </div>
-                                <Zap className="w-4 h-4 text-[#00A3FF] animate-pulse" />
-                              </div>
+                              
+                              {/* Decorative background scanline */}
+                              <div className="absolute top-0 left-0 w-full h-1 bg-primary/20 shadow-[0_0_10px_rgba(204,255,0,0.5)] animate-scan" />
                             </div>
                           </div>
                         </div>
-                      ) : (
+                      )}
+
+                      {!goals.find(g => g.type === 'custom' && g.title.includes('Marafon')) && (
                         <button 
                           onClick={() => {
                             setGoalsModalParams({ tab: 'new', period: 'Maxsus' });
                             setIsGoalsModalOpen(true);
                           }}
-                          className="flex items-center gap-4 w-full bg-gradient-to-br from-[#FF005C]/20 to-[#8A2BE2]/20 hover:from-[#FF005C]/30 hover:to-[#8A2BE2]/30 active:scale-[0.98] transition-all backdrop-blur-xl border border-[#FF005C]/30 rounded-[24px] p-5 relative overflow-hidden"
+                          className="flex items-center gap-4 w-full bg-gradient-to-br from-[#FF005C]/20 to-[#8A2BE2]/20 border border-[#FF005C]/30 rounded-[24px] p-5 hover:scale-[1.01] active:scale-[0.99] transition-all"
                         >
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF005C]/10 blur-3xl rounded-full pointer-events-none" />
                           <div className="w-12 h-12 rounded-full bg-[#FF005C]/20 flex items-center justify-center border border-[#FF005C]/30 shrink-0">
                             <Sparkles className="w-5 h-5 text-[#FF005C]" />
                           </div>
                           <div className="flex flex-col flex-1 text-left">
                             <h3 className="text-white text-base font-black tracking-wide">AI Marafon Rejalari</h3>
-                            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-relaxed mt-1">
+                            <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mt-1">
                               Sizga moslashtirilgan sun'iy intellekt dasturi
                             </p>
                           </div>
@@ -6013,15 +6751,11 @@ export default function Profile() {
 
                   {activeGoalSubTab === "Mening maqsadlarim" && (
                     <div className="flex flex-col gap-6">
-                      {[
-                        { title: "Haftalik maqsad", current: "47.3", total: "60", unit: "km", color: "#CCFF00", progress: 78.8, period: "Haftalik" },
-                        { title: "Oylik maqsad", current: "147.3", total: "300", unit: "km", color: "#00A3FF", progress: 49.1, period: "Oylik" },
-                        { title: "Shaxsiy maqsad", current: "5", total: "10", unit: "ta", color: "#FF0055", progress: 50, period: "Maxsus" }
-                      ].map((m, idx) => (
+                      {goals.map((m, idx) => (
                         <div 
-                          key={idx} 
+                          key={m.id} 
                           onClick={() => {
-                            setGoalsModalParams({ tab: 'new', period: m.period });
+                            setGoalsModalParams({ tab: 'active', period: m.type === 'weekly' ? 'Haftalik' : m.type === 'monthly' ? 'Oylik' : 'Maxsus' });
                             setIsGoalsModalOpen(true);
                           }}
                           className="flex flex-col gap-3 text-left w-full hover:bg-white/[0.08] cursor-pointer active:scale-[0.98] transition-all"
@@ -6046,6 +6780,9 @@ export default function Profile() {
                           </div>
                         </div>
                       ))}
+                      {goals.length === 0 && (
+                        <p className="text-center text-white/30 text-xs font-bold uppercase tracking-widest py-8">Maqsadlar mavjud emas</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -6158,6 +6895,40 @@ export default function Profile() {
         initialTab={goalsModalParams.tab}
         initialPeriod={goalsModalParams.period}
       />
+
+      {/* Marathon Plan Modal */}
+      <MarathonPlanModal 
+        isOpen={isMarathonPlanModalOpen} 
+        onClose={() => setIsMarathonPlanModalOpen(false)} 
+      />
+
+      {/* AI Chat Modal */}
+      <AIChatModal
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        messages={chatMessages}
+        onSendMessage={sendAIChatMessage}
+        isTyping={isTyping}
+        onClearHistory={() => setChatMessages([{ role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Chat tarixi tozalandi. Qanday yordam bera olaman?" }])}
+      />
+
+      {/* Floating AI Button */}
+      <div className="fixed bottom-24 right-6 z-50">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setIsAIChatOpen(true)}
+          className="relative group"
+        >
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] rounded-2xl blur opacity-40 group-hover:opacity-75 transition-all" />
+          <div className="relative w-14 h-14 bg-[#0A0A0F] border border-white/10 rounded-2xl flex items-center justify-center text-white shadow-2xl">
+            <Sparkles className="w-6 h-6 text-primary" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-[#0A0A0F] flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+            </div>
+          </div>
+        </motion.button>
+      </div>
 
       {/* Clan Chat Modal */}
       <ClanChatModal 

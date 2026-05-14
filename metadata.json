@@ -1,5 +1,5 @@
 {
   "name": "CyberRun - Kelajak Yugurish Ilovasi",
   "description": "Futuristik dizayn va real vaqtda yugurish monitoringi bilan jihozlangan yugurish ilovasi.",
-  "requestFramePermissions": ["geolocation"]
+  "requestFramePermissions": ["geolocation", "microphone"]
 }
