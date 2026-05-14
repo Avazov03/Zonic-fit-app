@@ -7,14 +7,14 @@ import { GoogleGenAI, Modality } from "@google/genai";
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
-  Settings, Bell, X, MapPin, Clock, Zap, Target, Trophy, Mic, 
+  Settings, Bell, X, MapPin, Clock, Zap, Target, Trophy, Mic, Trash2, Volume2, VolumeX, Check, Headphones, Send, Sparkles,
   ChevronRight, Activity, TrendingUp, Heart, Flame, Shield, Award,
   Footprints, Dumbbell, Bike, PersonStanding, Timer, ChevronLeft, Share2,
   Map, Compass, Globe, Crown, Navigation, Filter, Users, Sword, Flag, MessageSquare, Star, LayoutGrid, Info, Hexagon,
-  MoreHorizontal, Plus, Lock, Send, Search, Instagram, Link as LinkIcon,
-  Smartphone, Watch, Volume2, Languages, Trash2, EyeOff, UserCheck, Link2, Link2Off,
-  User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Headphones, Check, Quote,
-  Battery, Bluetooth, AlertTriangle, VolumeX, Volume1, Volume, RefreshCw, Sparkles,
+  MoreHorizontal, Plus, Lock, Search, Instagram, Link as LinkIcon,
+  Smartphone, Watch, Languages, EyeOff, UserCheck, Link2, Link2Off,
+  User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Quote,
+  Battery, Bluetooth, AlertTriangle, Volume1, Volume, RefreshCw,
   Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -589,13 +589,105 @@ const MarathonPlanModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
   );
 };
 
-const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onClearHistory }: { 
+const AIVoiceSetupModal = ({ isOpen, onClose, prefs, setPrefs }: { 
+  isOpen: boolean, 
+  onClose: () => void,
+  prefs: any,
+  setPrefs: (p: any) => void
+}) => {
+  if (!isOpen) return null;
+
+  const categories = [
+    { key: 'monitorDistance', label: 'Masofa va Progres', desc: 'Har 1-5km da umumiy tahlil', icon: <MapPin className="w-4 h-4" /> },
+    { key: 'monitorPace', label: 'Temp Monitoringi', desc: 'Tezlik pasaysa ogohlantirish', icon: <Zap className="w-4 h-4" /> },
+    { key: 'monitorHealth', label: 'Sog\'liq Nazorati', desc: 'Yurak urishi va nafas tahlili', icon: <Heart className="w-4 h-4" /> },
+    { key: 'provideMotivation', label: 'Psixologik Qo\'llab-quvvatlash', desc: 'Sizga kerakli paytda dalda berish', icon: <Sparkles className="w-4 h-4" /> },
+  ];
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 z-[200] bg-black/80 backdrop-blur-3xl flex justify-center items-center p-6"
+      >
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="w-full max-w-[400px] bg-[#0A0A0F] border border-white/10 rounded-[40px] p-8 relative overflow-hidden shadow-2xl"
+        >
+          {/* Background Glow */}
+          <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 blur-[100px] rounded-full" />
+          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-[#FF005C]/20 blur-[100px] rounded-full" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-black shadow-lg shadow-primary/20">
+                <Mic className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white italic">AI SOZLAMALARI</h2>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Ovozli yordamchi konfiguratsiyasi</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-8">
+              {categories.map((cat) => (
+                <button 
+                  key={cat.key}
+                  onClick={() => setPrefs({ ...prefs, [cat.key]: !prefs[cat.key] })}
+                  className={cn(
+                    "w-full p-4 rounded-2xl border transition-all text-left flex items-center justify-between",
+                    prefs[cat.key] ? "bg-white/5 border-primary/40" : "bg-black/40 border-white/5"
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "w-8 h-8 rounded-xl flex items-center justify-center",
+                      prefs[cat.key] ? "bg-primary text-black" : "bg-white/5 text-white/30"
+                    )}>
+                      {cat.icon}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-white uppercase">{cat.label}</p>
+                      <p className="text-[9px] font-bold text-white/30">{cat.desc}</p>
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                    prefs[cat.key] ? "bg-primary border-primary" : "border-white/10"
+                  )}>
+                    {prefs[cat.key] && <Check className="w-3 h-3 text-black" />}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={onClose}
+              className="w-full py-4 bg-primary text-black font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_10px_30px_rgba(204,255,0,0.3)] active:scale-95 transition-all text-xs"
+            >
+              Tayyor
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onClearHistory, isHandsFree, setIsHandsFree, uzVoice }: { 
   isOpen: boolean, 
   onClose: () => void,
   messages: {role: 'user' | 'model', text: string}[],
   onSendMessage: (msg: string) => void,
   isTyping: boolean,
-  onClearHistory: () => void
+  onClearHistory: () => void,
+  isHandsFree: boolean,
+  setIsHandsFree: (val: boolean) => void,
+  uzVoice: SpeechSynthesisVoice | null
 }) => {
   const [inputText, setInputText] = useState("");
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -616,23 +708,47 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'uz-UZ';
+      
+      // Try Uzbek, then fallback to Turkish or Russian as proxies if needed
+      try {
+        recognitionRef.current.lang = 'uz-UZ';
+      } catch (e) {
+        recognitionRef.current.lang = 'tr-TR';
+      }
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInputText(transcript);
         setIsListening(false);
+        
+        // Auto-send in hands-free mode
+        if (isHandsFree && transcript.trim()) {
+           onSendMessage(transcript);
+           setInputText("");
+        }
       };
 
-      recognitionRef.current.onerror = () => {
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech Recognition Error:", event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          toast.error("Mikrofonga ruxsat berilmadi", {
+            style: { background: '#0A0A0A', color: '#fff', border: '1px solid #FF005C' }
+          });
+        }
       };
 
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
+    } else {
+      console.warn("Speech Recognition not supported in this browser.");
     }
-  }, []);
+  }, [isHandsFree]);
 
   // Text to Speech for AI Responses
   useEffect(() => {
@@ -640,12 +756,29 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role === 'model' && lastMsg.text) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(lastMsg.text);
+        
+        // Prepare text for better TTS readout - simplify punctuation
+        const cleanText = lastMsg.text
+          .replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-]/gi, '') // Keep basic chars and Cyrillic/Latin Uzbek
+          .replace(/\*/g, ''); // Remove markdown bolding for cleaner speech
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        if (uzVoice) utterance.voice = uzVoice;
         utterance.lang = 'uz-UZ';
+        utterance.rate = 1.0; 
+        utterance.pitch = 1.0;
+        
+        if (isHandsFree) {
+          utterance.onend = () => {
+            // Wait a small bit then start listening
+            setTimeout(() => toggleListening(), 500);
+          };
+        }
+        
         window.speechSynthesis.speak(utterance);
       }
     }
-  }, [messages, isVoiceActive]);
+  }, [messages, isVoiceActive, isHandsFree]);
 
   const toggleListening = () => {
     if (isListening) {
@@ -689,6 +822,16 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsHandsFree(!isHandsFree)}
+                className={cn(
+                  "px-3 h-10 rounded-xl flex items-center gap-2 transition-all border text-[9px] font-black uppercase tracking-widest",
+                  isHandsFree ? "bg-primary text-black border-primary" : "bg-white/5 border-white/10 text-white/40"
+                )}
+              >
+                <Headphones className="w-4 h-4" />
+                {isHandsFree ? "Hands-Free" : "Manual"}
+              </button>
               <button 
                 onClick={() => {
                   if (confirm("Chat tarixini tozalashni xohlaysizmi?")) {
@@ -3965,6 +4108,18 @@ const SwipeableHistoryCards = ({ activities }: { activities: any[] }) => {
 export default function Profile() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Umumiy");
+  const [uzVoice, setUzVoice] = useState<SpeechSynthesisVoice | null>(null);
+
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      let found = voices.find(v => v.lang.toLowerCase().includes('uz'));
+      if (!found) found = voices.find(v => v.lang.toLowerCase().includes('tr'));
+      setUzVoice(found || null);
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
   
   const [activitySort, setActivitySort] = useState<'recent' | 'distance' | 'steps'>('recent');
   const [isActivityFilterOpen, setIsActivityFilterOpen] = useState(false);
@@ -4010,6 +4165,18 @@ export default function Profile() {
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [isMarathonPlanModalOpen, setIsMarathonPlanModalOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [isHandsFree, setIsHandsFree] = useState(false);
+  const [isAIVoiceAssistantActive, setIsAIVoiceAssistantActive] = useState(false);
+  const [isAIVoiceSetupOpen, setIsAIVoiceSetupOpen] = useState(false);
+  const [assistantState, setAssistantState] = useState<'idle' | 'listening_wake' | 'listening_cmd' | 'thinking' | 'speaking'>('idle');
+  const [activeTranscript, setActiveTranscript] = useState("");
+  const [voiceAssistantPrefs, setVoiceAssistantPrefs] = useState({
+    monitorDistance: true,
+    monitorPace: true,
+    monitorHealth: true,
+    provideMotivation: true,
+    analysisInterval: 5 // minutes
+  });
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([
     { role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Bugungi natijalaringiz haqida suhbatlashamizmi?" }
   ]);
@@ -4040,6 +4207,234 @@ export default function Profile() {
     window.speechSynthesis.speak(utterance);
   };
 
+  // Background Assistant Logic
+  const wakeRecognitionRef = useRef<any>(null);
+  
+  const startWakeWordListener = async () => {
+    if (typeof window === 'undefined' || !('WebkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      toast.error("Ovozli funksiya brauzeringizda qo'llab-quvvatlanmaydi");
+      return;
+    }
+
+    // Stop any existing session
+    if (wakeRecognitionRef.current) {
+      try { wakeRecognitionRef.current.abort(); } catch(e) {}
+    }
+
+    // Explicit permission request first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      console.error("Mic Permission Denied:", err);
+      toast.error("Mikrofonga ruxsat berilmadi. Iltimos, sozlamalardan ruxsat bering.", {
+        style: { background: '#0A0A0A', color: '#fff', border: '1px solid #FF005C' }
+      });
+      setIsAIVoiceAssistantActive(false);
+      return;
+    }
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    wakeRecognitionRef.current = recognition;
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    
+    try {
+      recognition.lang = 'uz-UZ';
+    } catch (e) {
+      recognition.lang = 'tr-TR';
+    }
+
+    recognition.onstart = () => {
+      setAssistantState('listening_wake');
+      console.log("Zonic is listening for wake word...");
+    };
+    
+    recognition.onresult = (event: any) => {
+      let text = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        text += event.results[i][0].transcript.toLowerCase();
+      }
+      
+      console.log("Detecting:", text);
+      
+      const triggers = [
+        'zonic', 'zonik', 'zonig', 'zomik', 'hey zonic', 'ey zonik', 'hay zonik', 
+        'salom zonic', 'hey zoni', 'joni', 'jonik', 'zohid', 'zoning', 'zoney',
+        'hey xonic', 'xonic', 'sonik', 'salom murabbiy', 'hey murabbiy', 'ezonic'
+      ];
+      
+      if (triggers.some(t => text.includes(t))) {
+        console.log("Wake word matched!");
+        // Visual & Audio Feedback
+        toast.success("Eshityapman...", {
+          icon: '🎙️',
+          style: { background: '#0A0A0A', color: '#fff', border: '1px solid #CCFF00' }
+        });
+        
+        // Play subtle beep if possible
+        try {
+          const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const osc = context.createOscillator();
+          const gain = context.createGain();
+          osc.connect(gain);
+          gain.connect(context.destination);
+          osc.type = 'sine';
+          osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0, context.currentTime);
+          gain.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.05);
+          gain.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
+          osc.start();
+          osc.stop(context.currentTime + 0.2);
+        } catch(e) {}
+
+        recognition.abort();
+        handleWakeUp();
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        console.error("WakeWord Error:", event.error);
+      }
+      if (event.error === 'not-allowed') {
+        setIsAIVoiceAssistantActive(false);
+      }
+      // Auto-restart on non-fatal errors
+      if (isAIVoiceAssistantActive && event.error !== 'not-allowed' && event.error !== 'aborted') {
+        setTimeout(() => {
+          if (wakeRecognitionRef.current === recognition) startWakeWordListener();
+        }, 1000);
+      }
+    };
+
+    recognition.onend = () => {
+      if (isAIVoiceAssistantActive && wakeRecognitionRef.current === recognition) {
+        setTimeout(() => {
+          if (assistantState === 'listening_wake') startWakeWordListener();
+        }, 50);
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Recognition start failure:", e);
+    }
+  };
+
+  const handleWakeUp = () => {
+    window.speechSynthesis.cancel();
+    setActiveTranscript("");
+    startCommandListener();
+  };
+
+  const commandSessionStartRef = useRef<number>(0);
+
+  const startCommandListener = (isRestart = false) => {
+    console.log("Zonic: Starting command listener...");
+    if (!isRestart) {
+      commandSessionStartRef.current = Date.now();
+    }
+    
+    if (wakeRecognitionRef.current) {
+      try { wakeRecognitionRef.current.abort(); } catch(e) {}
+    }
+
+    setAssistantState('listening_cmd');
+    if (!isRestart) {
+      setActiveTranscript("");
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
+    const cmdRec = new SpeechRecognition();
+    wakeRecognitionRef.current = cmdRec;
+    
+    cmdRec.continuous = false;
+    cmdRec.interimResults = true;
+    
+    try {
+      cmdRec.lang = 'uz-UZ';
+    } catch (e) {
+      cmdRec.lang = 'tr-TR';
+    }
+
+    let currentText = '';
+    let silenceTimeout: NodeJS.Timeout | null = null;
+
+    cmdRec.onresult = (event: any) => {
+      let newText = '';
+      for (let i = 0; i < event.results.length; i++) {
+        newText += event.results[i][0].transcript;
+      }
+      
+      // If the text actually changed, reset the silence timeout
+      if (newText !== currentText) {
+        currentText = newText;
+        setActiveTranscript(currentText);
+        
+        if (silenceTimeout) clearTimeout(silenceTimeout);
+        silenceTimeout = setTimeout(() => {
+          if (wakeRecognitionRef.current === cmdRec) {
+            cmdRec.stop();
+          }
+        }, 2000); // Stop automatically after 2 seconds of silence
+      }
+    };
+
+    cmdRec.onerror = (event: any) => {
+      if (silenceTimeout) clearTimeout(silenceTimeout);
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        console.error("Command Listener Error:", event.error);
+      }
+      if (isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
+        if (event.error === 'no-speech' && Date.now() - commandSessionStartRef.current < 60000) {
+           // Ignore and will restart onend
+        } else if (event.error !== 'aborted') {
+           setAssistantState('listening_wake');
+           startWakeWordListener();
+        }
+      }
+    };
+
+    cmdRec.onend = () => {
+      if (silenceTimeout) clearTimeout(silenceTimeout);
+      console.log("Command listener ended. Final text:", currentText);
+      if (currentText.trim()) {
+        sendAIChatMessage(currentText);
+        setActiveTranscript("");
+      } else if (isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
+        if (Date.now() - commandSessionStartRef.current < 60000) {
+          setTimeout(() => {
+            try { startCommandListener(true); } catch(e) {}
+          }, 50);
+        } else {
+          setAssistantState('listening_wake');
+          startWakeWordListener();
+        }
+      }
+    };
+    
+    try {
+      cmdRec.start();
+    } catch (e) {
+      console.error("Command listener start failure:", e);
+      setAssistantState('listening_wake');
+      startWakeWordListener();
+    }
+  };
+
+  useEffect(() => {
+    if (isAIVoiceAssistantActive && !isAIChatOpen) {
+      startWakeWordListener();
+    } else {
+      wakeRecognitionRef.current?.stop();
+      if (!isAIChatOpen) setAssistantState('idle');
+    }
+    return () => wakeRecognitionRef.current?.stop();
+  }, [isAIVoiceAssistantActive, isAIChatOpen]);
+
   const sendAIChatMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -4047,6 +4442,7 @@ export default function Profile() {
     const newUserMsg = { role: 'user' as const, text };
     setChatMessages(prev => [...prev, newUserMsg]);
     setIsTyping(true);
+    setAssistantState('thinking');
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -4069,14 +4465,26 @@ export default function Profile() {
 
       // Start streaming for better perceived speed
       const result = await ai.models.generateContentStream({
-        model: "gemini-3.1-flash-lite", // Using a faster lite model
+        model: "gemini-3.1-pro-preview", 
         contents: [
-          { role: 'user', parts: [{ text: statsContext }] },
-          ...chatMessages.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+          ...chatMessages.filter((m, i) => !(i === 0 && m.role === 'model')).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
           { role: 'user', parts: [{ text: text }] }
         ],
         config: {
-          systemInstruction: "You are an expert AI Sports Coach for a running app called 'ZONIC'. Be helpful and motivating."
+          systemInstruction: `SIZ 'ZONIC' ILOVASINING SHAXSIY AI MURABBIYI VA SUDYASISIZ. 
+          
+          USER STATS AND CONTEXT:
+          ${statsContext}
+
+          MULOQOT USLUBI (JUDA MUHIM):
+          1. Sof o'zbek tilida, samimiy va erkin gapiring.
+          2. 'Siz' deb hurmat bilan, lekin yaqin do'stdek/akadek ('jigarim', 'omon bo'ling', 'boringizga shukur') murojaat qiling.
+          3. Ovozli rejimda o'qish qulay bo'lishi uchun gaplarni qisqa va lo'nda tuzing.
+          4. Toshkent va voha shevalaridagi iliq so'zlarni joyida ishlating (masalan: 'G'ayrat qilinga', 'Harakatdan baraka topasiz').
+          5. Sport terminlarini o'zbekcha tushuntiring.
+          6. FAQAT matn ko'rinishida javob bering, markdown belgilarini umuman ishlatmang.
+          7. Emojilarni faqat gapning eng oxirida ishlating.
+          8. Agar foydalanuvchi tushunmasa, soddaroq qilib qayta tushuntiring.`
         }
       });
 
@@ -4084,21 +4492,83 @@ export default function Profile() {
       setChatMessages(prev => [...prev, { role: 'model', text: "" }]);
       setIsTyping(false);
 
+      if (isAIVoiceAssistantActive || isHandsFree) {
+        window.speechSynthesis.cancel(); // Clear queue
+        setAssistantState('speaking');
+      }
+
       let fullText = "";
+      let sentenceBuffer = "";
+
       for await (const chunk of result) {
-        fullText += chunk.text;
+        const chunkText = (chunk as any).text || "";
+        fullText += chunkText;
+        sentenceBuffer += chunkText;
+
         setChatMessages(prev => {
           const lastIdx = prev.length - 1;
           const next = [...prev];
           next[lastIdx] = { ...next[lastIdx], text: fullText };
           return next;
         });
+
+        if (isAIVoiceAssistantActive || isHandsFree) {
+          const match = sentenceBuffer.match(/([^\.!\?]+[\.!\?]+)/);
+          if (match) {
+            const sentence = match[0];
+            sentenceBuffer = sentenceBuffer.slice(sentence.length);
+            
+            const cleanText = sentence.replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-]/gi, '').replace(/\*/g, '');
+            if (cleanText.trim()) {
+               const utterance = new SpeechSynthesisUtterance(cleanText);
+               if (uzVoice) utterance.voice = uzVoice;
+               utterance.lang = 'uz-UZ';
+               window.speechSynthesis.speak(utterance);
+            }
+          }
+        }
+      }
+
+      if (isAIVoiceAssistantActive || isHandsFree) {
+        const cleanRemaining = sentenceBuffer.replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-]/gi, '').replace(/\*/g, '');
+        if (cleanRemaining.trim()) {
+           const utterance = new SpeechSynthesisUtterance(cleanRemaining);
+           if (uzVoice) utterance.voice = uzVoice;
+           utterance.lang = 'uz-UZ';
+           window.speechSynthesis.speak(utterance);
+        }
+        
+        // Polling to detect when TTS is done (more reliable than onend)
+        const checkDone = setInterval(() => {
+          if (!window.speechSynthesis.speaking) {
+             clearInterval(checkDone);
+             if (isAIVoiceAssistantActive) {
+                startCommandListener();
+             } else {
+                setAssistantState('idle');
+             }
+          }
+        }, 300);
+      } else {
+        setAssistantState('idle');
       }
 
     } catch (error) {
       console.error("Gemini Error:", error);
-      setChatMessages(prev => [...prev, { role: 'model', text: "Aloqa bilan bog'liq xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring." }]);
+      const errorMsg = "Uzur, aloqa o'rnatishda xatolik yuz berdi. Qaytadan aytib ko'ring.";
+      setChatMessages(prev => [...prev, { role: 'model', text: errorMsg }]);
       setIsTyping(false);
+      
+      if (isAIVoiceAssistantActive) {
+        setAssistantState('speaking');
+        const utterance = new SpeechSynthesisUtterance(errorMsg);
+        if (uzVoice) utterance.voice = uzVoice;
+        utterance.lang = 'uz-UZ';
+        utterance.onend = () => startWakeWordListener();
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setAssistantState('idle');
+      }
     }
   };
 
@@ -4266,6 +4736,7 @@ export default function Profile() {
     },
     voiceFeedback: true,
     voiceVolume: 80,
+    aiVoiceAssistant: false,
     parentalLinkActive: false,
     watchSync: true,
     autoSync: true
@@ -4448,64 +4919,20 @@ export default function Profile() {
     if (isVoiceTesting) return;
     
     const text = customText || "Xayrli kun! Men Zonic AI yordamchisiman. Bugun yangi marralarni zabt etishga tayyormisiz?";
-    const currentVoice = forceVoice || voiceType;
-    const cacheKey = `${text}_${currentVoice}`;
-
-    const playAudio = (float32: Float32Array) => {
-      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-      const audioCtx = new AudioContextClass();
-      const buffer = audioCtx.createBuffer(1, float32.length, 24000);
-      buffer.getChannelData(0).set(float32);
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      const gainNode = audioCtx.createGain();
-      gainNode.gain.value = settings.voiceVolume / 100;
-      source.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      source.start(0);
-      source.onended = () => audioCtx.close();
-    };
-
-    if (voiceCache.current[cacheKey]) {
-      playAudio(voiceCache.current[cacheKey]);
-      return;
-    }
-
+    
     setIsVoiceTesting(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-tts-preview",
-        contents: [{ parts: [{ text: `Say: ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: currentVoice },
-            },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const binaryString = atob(base64Audio);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const pcm16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(pcm16.length);
-        for (let i = 0; i < pcm16.length; i++) {
-          float32[i] = pcm16[i] / 32768.0;
-        }
-        
-        voiceCache.current[cacheKey] = float32;
-        playAudio(float32);
-      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (uzVoice) utterance.voice = uzVoice;
+      utterance.lang = 'uz-UZ';
+      utterance.volume = settings.voiceVolume / 100;
+      utterance.pitch = 1.0;
+      utterance.rate = 1.0;
+      utterance.onend = () => setIsVoiceTesting(false);
+      utterance.onerror = () => setIsVoiceTesting(false);
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
-      console.error("Ovozli yordamchi xatosi:", error);
-    } finally {
+      console.error("TTS xatosi:", error);
       setIsVoiceTesting(false);
     }
   };
@@ -4528,6 +4955,24 @@ export default function Profile() {
     const newValue = !settings[key];
     setSettings(prev => ({ ...prev, [key]: newValue }));
     
+    if (key === 'aiVoiceAssistant' && newValue) {
+      setIsAIVoiceAssistantActive(true);
+      setAssistantState('speaking');
+      
+      // Greet the user via voice with weather info and tips
+      const greeting = "Salom! Men sizning ovozli AI murabbiyingizman. Bugun Toshkentda havo juda yaxshi, yigirma to'rt daraja iliq va ochiq. Yugurish uchun ajoyib vaqt! Biror narsa kerak bo'lsa 'Hey Zonic' deb chaqiring, men doimo tinglayman.";
+      const utterance = new SpeechSynthesisUtterance(greeting);
+      if (uzVoice) utterance.voice = uzVoice;
+      utterance.lang = 'uz-UZ';
+      utterance.onend = () => {
+        startCommandListener();
+      };
+      window.speechSynthesis.speak(utterance);
+      return;
+    } else if (key === 'aiVoiceAssistant' && !newValue) {
+      setIsAIVoiceAssistantActive(false);
+    }
+
     if (newValue) {
       toast.success(`${label} yoqildi`, {
         style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(204,255,0,0.2)' }
@@ -5169,6 +5614,51 @@ export default function Profile() {
                     )}
                   </div>
 
+                  {/* AI Real Coach - Voice */}
+                  <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/5 space-y-4 shadow-xl shadow-primary/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-white">Ovozli AI Murabbiy</h4>
+                            <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[7px] font-black uppercase tracking-widest">New</span>
+                          </div>
+                          <p className="text-[10px] text-white/30">Sun'iy intellekt tahlili va ovozli suhbat</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => toggleSetting('aiVoiceAssistant', 'Ovozli AI Murabbiy')}
+                        className={cn(
+                          "w-12 h-6 rounded-full transition-all relative",
+                          settings.aiVoiceAssistant ? "bg-primary shadow-[0_0_15px_rgba(204,255,0,0.4)]" : "bg-white/10"
+                        )}
+                      >
+                        <motion.div 
+                          animate={{ x: settings.aiVoiceAssistant ? 26 : 4 }}
+                          className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg"
+                        />
+                      </button>
+                    </div>
+                    {settings.aiVoiceAssistant && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="pt-4 border-t border-white/5 flex items-center justify-between"
+                      >
+                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest italic">AI doimo monitoring qilmoqda</p>
+                        <button 
+                          onClick={() => setIsAIVoiceSetupOpen(true)}
+                          className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline"
+                        >
+                          Sozlash
+                        </button>
+                      </motion.div>
+                    )}
+                  </div>
+
                   {/* Notification Toggles */}
                   <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/5 space-y-4">
                     {[
@@ -5657,6 +6147,88 @@ export default function Profile() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
+              {isAIVoiceAssistantActive && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="px-6 pt-4"
+                >
+                  <div 
+                    onClick={() => {
+                      if (assistantState === 'listening_wake') {
+                        wakeRecognitionRef.current?.stop();
+                        handleWakeUp();
+                      }
+                    }}
+                    className={cn(
+                    "border rounded-2xl p-3 flex items-center justify-between shadow-lg transition-all duration-500 cursor-pointer active:scale-95 hover:bg-white/5",
+                    assistantState === 'listening_wake' ? "bg-primary/5 border-primary/20" : 
+                    assistantState === 'listening_cmd' ? "bg-blue-500/10 border-blue-500/20" :
+                    assistantState === 'thinking' ? "bg-purple-500/10 border-purple-500/20" :
+                    assistantState === 'speaking' ? "bg-[#FF005C]/10 border-[#FF005C]/20" : "bg-white/5 border-white/10"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                          assistantState === 'listening_wake' ? "bg-primary text-black" : 
+                          assistantState === 'listening_cmd' ? "bg-blue-500 text-white animate-pulse" :
+                          assistantState === 'thinking' ? "bg-purple-500 text-white" :
+                          assistantState === 'speaking' ? "bg-[#FF005C] text-white" : "bg-white/10 text-white/40"
+                        )}>
+                          {assistantState === 'listening_wake' ? <Headphones className="w-5 h-5" /> : 
+                           assistantState === 'listening_cmd' ? <Mic className="w-5 h-5" /> :
+                           assistantState === 'thinking' ? <Sparkles className="w-5 h-5 animate-spin" /> :
+                           assistantState === 'speaking' ? <Volume2 className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        </div>
+                        {assistantState !== 'idle' && (
+                          <div className={cn(
+                            "absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-[#0A0A0F] flex items-center justify-center overflow-hidden bg-[#0A0A0F]",
+                          )}>
+                            <motion.div 
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ repeat: Infinity, duration: 1 }}
+                              className={cn(
+                                "w-2 h-2 rounded-full",
+                                assistantState === 'listening_wake' ? "bg-primary" : "bg-[#FF005C]"
+                              )} 
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className={cn(
+                          "text-[10px] font-black uppercase tracking-widest leading-tight",
+                          assistantState === 'listening_wake' ? "text-primary" : "text-white"
+                        )}>
+                          {assistantState === 'listening_wake' ? '"Hey Zonic" kutilyapti' : 
+                           assistantState === 'listening_cmd' ? (activeTranscript ? `"${activeTranscript}"` : "Eshityapman...") :
+                           assistantState === 'thinking' ? "Tahlil qilyapman..." :
+                           assistantState === 'speaking' ? "Gapiryapman..." : "AI Murabbiy Faol"}
+                        </p>
+                        <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest leading-none mt-0.5 italic">
+                          {assistantState === 'listening_wake' ? "Tap to talk or say keyword" : 
+                           assistantState === 'listening_cmd' ? "Sizni tinglayapman..." : "Smart Voice Active Mode"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <div className="h-4 w-[1px] bg-white/10" />
+                       <div className="flex gap-1">
+                          {[1, 2, 3].map(i => (
+                            <motion.div 
+                              key={i}
+                              animate={{ height: assistantState === 'speaking' || assistantState === 'listening_cmd' ? [4, 12, 4] : 4 }}
+                              transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }}
+                              className="w-1 rounded-full bg-primary/40"
+                            />
+                          ))}
+                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Main Stats Panel - VAR 04: Smoked Obsidian */}
               <section className="px-4 mb-6 pt-5">
                 <div className="relative overflow-hidden bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-[24px] border border-white/5 py-5 px-4 shadow-2xl group active:scale-[0.98] transition-transform">
@@ -6902,6 +7474,14 @@ export default function Profile() {
         onClose={() => setIsMarathonPlanModalOpen(false)} 
       />
 
+      {/* AI Voice Assistant Setup Modal */}
+      <AIVoiceSetupModal 
+        isOpen={isAIVoiceSetupOpen}
+        onClose={() => setIsAIVoiceSetupOpen(false)}
+        prefs={voiceAssistantPrefs}
+        setPrefs={setVoiceAssistantPrefs}
+      />
+
       {/* AI Chat Modal */}
       <AIChatModal
         isOpen={isAIChatOpen}
@@ -6910,6 +7490,9 @@ export default function Profile() {
         onSendMessage={sendAIChatMessage}
         isTyping={isTyping}
         onClearHistory={() => setChatMessages([{ role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Chat tarixi tozalandi. Qanday yordam bera olaman?" }])}
+        isHandsFree={isHandsFree}
+        setIsHandsFree={setIsHandsFree}
+        uzVoice={uzVoice}
       />
 
       {/* Floating AI Button */}
