@@ -714,7 +714,10 @@ const AIChatModal = ({
   uzVoice,
   voiceEnabledByDefault = false,
   assistantState,
-  speakText
+  speakText,
+  activeTranscript,
+  onStartMic,
+  onStopMic
 }: { 
   isOpen: boolean, 
   onClose: () => void,
@@ -727,20 +730,28 @@ const AIChatModal = ({
   uzVoice: SpeechSynthesisVoice | null,
   voiceEnabledByDefault?: boolean,
   assistantState: 'idle' | 'listening_wake' | 'listening_cmd' | 'thinking' | 'speaking',
-  speakText: (text: string) => void
+  speakText: (text: string) => void,
+  activeTranscript: string,
+  onStartMic: () => void,
+  onStopMic: () => void
 }) => {
   const [inputText, setInputText] = useState("");
   const [isVoiceActive, setIsVoiceActive] = useState(voiceEnabledByDefault || isHandsFree);
-  const [isListening, setIsListening] = useState(false);
+  const isListening = assistantState === 'listening_cmd';
 
   // Keep state in sync if it changes while open
   useEffect(() => {
     if (voiceEnabledByDefault || isHandsFree) setIsVoiceActive(true);
   }, [voiceEnabledByDefault, isHandsFree]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+
+  const prevMessagesLength = useRef(messages.length);
+  useEffect(() => {
+    if (messages.length > prevMessagesLength.current) {
+      setInputText("");
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages.length]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -748,78 +759,11 @@ const AIChatModal = ({
     }
   }, [messages, isTyping]);
 
-  // Speech Recognition Setup
   useEffect(() => {
-    let recognition: any = null;
-    if (typeof window !== 'undefined' && ('WebkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      
-      // Try Uzbek, then fallback to Turkish or Russian as proxies if needed
-      try {
-        recognition.lang = 'uz-UZ';
-      } catch (e) {
-        recognition.lang = 'tr-TR';
-      }
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(transcript);
-        setIsListening(false);
-        
-        // Auto-send in hands-free mode
-        if (isHandsFree && transcript.trim()) {
-           onSendMessage(transcript);
-           setInputText("");
-        }
-      };
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onerror = (event: any) => {
-        if (event.error === 'aborted' || event.error === 'no-speech') {
-          setIsListening(false);
-          return;
-        }
-
-        if (event.error === 'network') {
-          console.warn("Speech Recognition Network Error. Retrying if needed...");
-          setIsListening(false);
-          return;
-        }
-
-        console.error("Speech Recognition Error:", event.error);
-        setIsListening(false);
-        
-        if (event.error === 'not-allowed') {
-          toast.error("Mikrofonga ruxsat berilmadi", {
-            style: { background: '#0A0A0A', color: '#fff', border: '1px solid #FF005C' }
-          });
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
+    if (isListening || activeTranscript !== "") {
+      setInputText(activeTranscript);
     }
-
-    return () => {
-      if (recognition) {
-        recognition.onstart = null;
-        recognition.onend = null;
-        recognition.onerror = null;
-        recognition.onresult = null;
-        try {
-          recognition.abort();
-        } catch (e) {}
-      }
-    };
-  }, [isHandsFree]);
+  }, [activeTranscript, isListening]);
 
   // Text to Speech for AI Responses
   useEffect(() => {
@@ -831,49 +775,12 @@ const AIChatModal = ({
     }
   }, [messages, isVoiceActive, isOpen]);
 
-  // Auto-listen in Hands-Free mode after speaking finishes
-  useEffect(() => {
-    // Only auto-listen if: 
-    // 1. Hands-free is ON
-    // 2. Chat is open
-    // 3. AI is NOT speaking OR thinking
-    // 4. We are NOT already listening
-    if (isOpen && isHandsFree && isVoiceActive && assistantState === 'listening_cmd' && !isTyping && !isListening) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg && lastMsg.role === 'model') {
-        // Delay slightly to avoid catching the end of previous audio or user's own breath
-        const timer = setTimeout(() => {
-          if (!isListening && assistantState === 'listening_cmd') startListening();
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [assistantState, isOpen, isHandsFree, isVoiceActive, isTyping, messages, isListening]);
-
-  const startListening = () => {
-    if (isListening) return;
-    try {
-      setInputText("");
-      // Ensure we clean up any previous instance state if possible
-      try { recognitionRef.current?.stop(); } catch(e) {}
-      
-      recognitionRef.current?.start();
-      setIsListening(true);
-    } catch (e: any) {
-      console.warn("Failed to start recognition:", e);
-      if (e?.message?.includes('already started')) {
-        setIsListening(true);
-      }
-    }
-  };
-
   const toggleListening = () => {
     if (isListening) {
-      try {
-        recognitionRef.current?.stop();
-      } catch (e) {}
+      onStopMic();
     } else {
-      startListening();
+      setInputText("");
+      onStartMic();
     }
   };
 
@@ -4317,10 +4224,10 @@ export default function Profile() {
         // Queue is completely empty - finish speaking state
         if (assistantState === 'speaking') {
            setAssistantState('listening_cmd');
-           // Auto-listen after speaking if in AI mode and Modal is not open
-           if (isAIVoiceAssistantActive && !isAIChatOpen) {
+           // Auto-listen after speaking if in AI mode and Modal is not open, OR in HandsFree chat
+           if ((isAIVoiceAssistantActive && !isAIChatOpen) || (isAIChatOpen && isHandsFree)) {
               setTimeout(() => {
-                if (isAIVoiceAssistantActive && !isAIChatOpen) {
+                if ((isAIVoiceAssistantActive && !isAIChatOpen) || (isAIChatOpen && isHandsFree)) {
                   startCommandListener();
                 }
               }, 400);
@@ -4770,13 +4677,23 @@ export default function Profile() {
       if (silenceTimeout) clearTimeout(silenceTimeout);
       console.log("Browser STT ended. Text:", currentText);
       if (currentText.trim()) {
-        if (isAIVoiceAssistantActive) {
+        if (isAIChatOpen) {
+          if (isHandsFree) {
+            sendAIChatMessage(currentText);
+            setActiveTranscript("");
+          } else {
+            setAssistantState('idle');
+            // Intentionally not clearing activeTranscript here so the user can edit it
+            // It will be cleared when they manually send or close chat
+          }
+        } else if (isAIVoiceAssistantActive) {
           sendVoiceCoachMessage(currentText);
+          setActiveTranscript("");
         } else {
           sendAIChatMessage(currentText);
+          setActiveTranscript("");
         }
-        setActiveTranscript("");
-      } else if (isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
+      } else if (!isAIChatOpen && isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
         // If we are in voice coach mode and no speech was detected, 
         // keep listening for up to 60 seconds from the initial wake up
         if (Date.now() - commandSessionStartRef.current < 60000) {
@@ -4789,6 +4706,8 @@ export default function Profile() {
           setAssistantState('listening_wake');
           startWakeWordListener();
         }
+      } else {
+        setAssistantState('idle');
       }
     };
 
@@ -4829,6 +4748,9 @@ export default function Profile() {
       startWakeWordListener();
     } else {
       wakeRecognitionRef.current?.stop();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
       if (!isAIChatOpen) setAssistantState('idle');
     }
     return () => wakeRecognitionRef.current?.stop();
@@ -4847,6 +4769,7 @@ export default function Profile() {
     setChatMessages(prev => [...prev, newUserMsg]);
     setIsTyping(true);
     setAssistantState('thinking');
+    setActiveTranscript("");
 
     try {
       const daysUz = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
@@ -5048,7 +4971,8 @@ export default function Profile() {
         const checkErrDone = setInterval(() => {
           if (!isPlayingAudio.current && audioQueue.current.length === 0) {
             clearInterval(checkErrDone);
-            startWakeWordListener();
+            if (!isAIChatOpen) startWakeWordListener();
+            else setAssistantState('idle');
           }
         }, 300);
       } else {
@@ -5167,7 +5091,7 @@ export default function Profile() {
       // Robust check for when AI finishes speaking
       const checkAndRestart = () => {
         if (!isPlayingAudio.current && audioQueue.current.length === 0 && blobQueue.current.length === 0) {
-           if (isAIVoiceAssistantActive) {
+           if (isAIVoiceAssistantActive && !isAIChatOpen) {
               console.log("AI finished speaking. Listening again...");
               startCommandListener();
            } else {
@@ -8091,7 +8015,7 @@ export default function Profile() {
       />
 
       {/* AI Chat Modal */}
-    <AIChatModal
+      <AIChatModal
         isOpen={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
         messages={chatMessages}
@@ -8104,6 +8028,12 @@ export default function Profile() {
         voiceEnabledByDefault={false}
         assistantState={assistantState}
         speakText={speakText}
+        activeTranscript={activeTranscript}
+        onStartMic={() => startWebSpeechRecognition(true)}
+        onStopMic={() => {
+          wakeRecognitionRef.current?.stop();
+          setAssistantState('idle');
+        }}
       />
 
       {/* Floating AI Button */}
