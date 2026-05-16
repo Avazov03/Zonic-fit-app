@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { GoogleGenAI, Modality } from "@google/genai";
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -678,7 +677,45 @@ const AIVoiceSetupModal = ({ isOpen, onClose, prefs, setPrefs }: {
   );
 };
 
-const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onClearHistory, isHandsFree, setIsHandsFree, uzVoice }: { 
+// TTS Cleanup Utility for Uzbek - Optimized for Browser Engines
+const cleanForTTS = (text: string) => {
+  if (!text) return "";
+  let t = text
+    .replace(/km²/gi, " kvadrat kilometir")
+    .replace(/km/gi, " kilometir")
+    .replace(/kg/gi, " kilogiram")
+    .replace(/m/gi, " metir")
+    .replace(/bpm/gi, " zarba")
+    .replace(/ml/gi, " millilitir")
+    .replace(/([0-9])'([0-9]{2})"/g, "$1 daqiqa $2 soniya") // Pace 5'12" -> 5 daqiqa 12 soniya
+    .replace(/([0-9]+)\.([0-9]+)/g, "$1 butun $2") // 4.5 -> 4 butun 5
+    // Uzbek phonetics for better browser TTS pronunciation
+    .replace(/o['ʻʼ]/g, "o")
+    .replace(/g['ʻʼ]/g, "g")
+    .replace(/ç/g, "ch")
+    .replace(/ş/g, "sh")
+    .replace(/[*_#\[\]]/g, "") // Remove common markdown
+    .replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-«»]/gi, '') // Keep basic chars including Uzbek Cyrillic
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  return t;
+};
+
+const AIChatModal = ({ 
+  isOpen, 
+  onClose, 
+  messages, 
+  onSendMessage, 
+  isTyping, 
+  onClearHistory, 
+  isHandsFree, 
+  setIsHandsFree, 
+  uzVoice,
+  voiceEnabledByDefault = false,
+  assistantState,
+  speakText
+}: { 
   isOpen: boolean, 
   onClose: () => void,
   messages: {role: 'user' | 'model', text: string}[],
@@ -687,13 +724,23 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
   onClearHistory: () => void,
   isHandsFree: boolean,
   setIsHandsFree: (val: boolean) => void,
-  uzVoice: SpeechSynthesisVoice | null
+  uzVoice: SpeechSynthesisVoice | null,
+  voiceEnabledByDefault?: boolean,
+  assistantState: 'idle' | 'listening_wake' | 'listening_cmd' | 'thinking' | 'speaking',
+  speakText: (text: string) => void
 }) => {
   const [inputText, setInputText] = useState("");
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(voiceEnabledByDefault || isHandsFree);
   const [isListening, setIsListening] = useState(false);
+
+  // Keep state in sync if it changes while open
+  useEffect(() => {
+    if (voiceEnabledByDefault || isHandsFree) setIsVoiceActive(true);
+  }, [voiceEnabledByDefault, isHandsFree]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -703,20 +750,22 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
 
   // Speech Recognition Setup
   useEffect(() => {
+    let recognition: any = null;
     if (typeof window !== 'undefined' && ('WebkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.interimResults = false;
       
       // Try Uzbek, then fallback to Turkish or Russian as proxies if needed
       try {
-        recognitionRef.current.lang = 'uz-UZ';
+        recognition.lang = 'uz-UZ';
       } catch (e) {
-        recognitionRef.current.lang = 'tr-TR';
+        recognition.lang = 'tr-TR';
       }
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInputText(transcript);
         setIsListening(false);
@@ -728,13 +777,25 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
         }
       };
 
-      recognitionRef.current.onstart = () => {
+      recognition.onstart = () => {
         setIsListening(true);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
+      recognition.onerror = (event: any) => {
+        if (event.error === 'aborted' || event.error === 'no-speech') {
+          setIsListening(false);
+          return;
+        }
+
+        if (event.error === 'network') {
+          console.warn("Speech Recognition Network Error. Retrying if needed...");
+          setIsListening(false);
+          return;
+        }
+
         console.error("Speech Recognition Error:", event.error);
         setIsListening(false);
+        
         if (event.error === 'not-allowed') {
           toast.error("Mikrofonga ruxsat berilmadi", {
             style: { background: '#0A0A0A', color: '#fff', border: '1px solid #FF005C' }
@@ -742,51 +803,77 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
         }
       };
 
-      recognitionRef.current.onend = () => {
+      recognition.onend = () => {
         setIsListening(false);
       };
-    } else {
-      console.warn("Speech Recognition not supported in this browser.");
     }
+
+    return () => {
+      if (recognition) {
+        recognition.onstart = null;
+        recognition.onend = null;
+        recognition.onerror = null;
+        recognition.onresult = null;
+        try {
+          recognition.abort();
+        } catch (e) {}
+      }
+    };
   }, [isHandsFree]);
 
   // Text to Speech for AI Responses
   useEffect(() => {
-    if (isVoiceActive && messages.length > 0) {
+    if (isOpen && isVoiceActive && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role === 'model' && lastMsg.text) {
-        window.speechSynthesis.cancel();
-        
-        // Prepare text for better TTS readout - simplify punctuation
-        const cleanText = lastMsg.text
-          .replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-]/gi, '') // Keep basic chars and Cyrillic/Latin Uzbek
-          .replace(/\*/g, ''); // Remove markdown bolding for cleaner speech
-
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        if (uzVoice) utterance.voice = uzVoice;
-        utterance.lang = 'uz-UZ';
-        utterance.rate = 1.0; 
-        utterance.pitch = 1.0;
-        
-        if (isHandsFree) {
-          utterance.onend = () => {
-            // Wait a small bit then start listening
-            setTimeout(() => toggleListening(), 500);
-          };
-        }
-        
-        window.speechSynthesis.speak(utterance);
+        speakText(lastMsg.text);
       }
     }
-  }, [messages, isVoiceActive, isHandsFree]);
+  }, [messages, isVoiceActive, isOpen]);
+
+  // Auto-listen in Hands-Free mode after speaking finishes
+  useEffect(() => {
+    // Only auto-listen if: 
+    // 1. Hands-free is ON
+    // 2. Chat is open
+    // 3. AI is NOT speaking OR thinking
+    // 4. We are NOT already listening
+    if (isOpen && isHandsFree && isVoiceActive && assistantState === 'listening_cmd' && !isTyping && !isListening) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && lastMsg.role === 'model') {
+        // Delay slightly to avoid catching the end of previous audio or user's own breath
+        const timer = setTimeout(() => {
+          if (!isListening && assistantState === 'listening_cmd') startListening();
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [assistantState, isOpen, isHandsFree, isVoiceActive, isTyping, messages, isListening]);
+
+  const startListening = () => {
+    if (isListening) return;
+    try {
+      setInputText("");
+      // Ensure we clean up any previous instance state if possible
+      try { recognitionRef.current?.stop(); } catch(e) {}
+      
+      recognitionRef.current?.start();
+      setIsListening(true);
+    } catch (e: any) {
+      console.warn("Failed to start recognition:", e);
+      if (e?.message?.includes('already started')) {
+        setIsListening(true);
+      }
+    }
+  };
 
   const toggleListening = () => {
     if (isListening) {
-      recognitionRef.current?.stop();
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {}
     } else {
-      setInputText("");
-      recognitionRef.current?.start();
-      setIsListening(true);
+      startListening();
     }
   };
 
@@ -817,7 +904,7 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
                 <h2 className="text-white text-sm font-black uppercase tracking-widest leading-none">AI Murabbiy</h2>
                 <div className="flex items-center gap-1 mt-1">
                    <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-                   <p className="text-[8px] font-black uppercase tracking-widest text-primary/60">Online • Live Support</p>
+                   <p className="text-[8px] font-black uppercase tracking-widest text-primary/60">OpenAI & Gemini Powered</p>
                 </div>
               </div>
             </div>
@@ -879,12 +966,7 @@ const AIChatModal = ({ isOpen, onClose, messages, onSendMessage, isTyping, onCle
                   </span>
                   {msg.role === 'model' && (
                     <button 
-                      onClick={() => {
-                        window.speechSynthesis.cancel();
-                        const utterance = new SpeechSynthesisUtterance(msg.text);
-                        utterance.lang = 'uz-UZ';
-                        window.speechSynthesis.speak(utterance);
-                      }}
+                      onClick={() => speakText(msg.text)}
                       className="text-white/20 hover:text-white/40 transition-colors"
                     >
                       <Volume2 className="w-3 h-3" />
@@ -1322,7 +1404,8 @@ const GoalsModal = ({
   completedGoals, 
   setCompletedGoals,
   initialTab,
-  initialPeriod
+  initialPeriod,
+  speakText
 }: { 
   isOpen: boolean, 
   onClose: () => void,
@@ -1331,15 +1414,11 @@ const GoalsModal = ({
   completedGoals: Goal[],
   setCompletedGoals: React.Dispatch<React.SetStateAction<Goal[]>>,
   initialTab?: 'active' | 'history' | 'new',
-  initialPeriod?: string
+  initialPeriod?: string,
+  speakText: (text: string) => void
 }) => {
   // AI Audio Coach Speech Function
-  const speakMotivation = () => {
-    if (!('speechSynthesis' in window)) {
-      alert("Kechirasiz, sizning brauzeringiz ovozli funksiyani qo'llab-quvvatlamaydi.");
-      return;
-    }
-
+  const speakMotivationLocal = () => {
     const messages = [
       "Ajoyib ketmoqdasiz! Nafas olishni unutmang.",
       "Sizning chidamliligingiz hayratlanarli. Shunday davom eting!",
@@ -1349,14 +1428,7 @@ const GoalsModal = ({
     ];
 
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    const utterance = new SpeechSynthesisUtterance(randomMessage);
-    
-    // O'zbek tili uchun moslash (agar tizimda bo'lsa)
-    utterance.lang = 'uz-UZ';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-
-    window.speechSynthesis.speak(utterance);
+    speakText(randomMessage);
   };
 
   const [activeTab, setActiveTab] = useState<'active' | 'history' | 'new'>(initialTab || 'active');
@@ -4113,12 +4185,26 @@ export default function Profile() {
   useEffect(() => {
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      let found = voices.find(v => v.lang.toLowerCase().includes('uz'));
-      if (!found) found = voices.find(v => v.lang.toLowerCase().includes('tr'));
+      // Prioritize high-quality voices (Google, Microsoft, etc.)
+      const uzVoices = voices.filter(v => v.lang.toLowerCase().includes('uz'));
+      const trVoices = voices.filter(v => v.lang.toLowerCase().includes('tr'));
+      const ruVoices = voices.filter(v => v.lang.toLowerCase().includes('ru'));
+
+      // Find the best Uzbek voice
+      let found = uzVoices.find(v => v.name.includes('Google')) || uzVoices[0];
+      
+      // Fallback to Turkish (phonetically closest)
+      if (!found) found = trVoices.find(v => v.name.includes('Google')) || trVoices[0];
+      
+      // Secondary fallback to Russian (common in Uzbekistan)
+      if (!found) found = ruVoices.find(v => v.name.includes('Google')) || ruVoices[0];
+      
       setUzVoice(found || null);
     };
     loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
   }, []);
   
   const [activitySort, setActivitySort] = useState<'recent' | 'distance' | 'steps'>('recent');
@@ -4168,6 +4254,7 @@ export default function Profile() {
   const [isHandsFree, setIsHandsFree] = useState(false);
   const [isAIVoiceAssistantActive, setIsAIVoiceAssistantActive] = useState(false);
   const [isAIVoiceSetupOpen, setIsAIVoiceSetupOpen] = useState(false);
+  const [useCloudSTT, setUseCloudSTT] = useState(true);
   const [assistantState, setAssistantState] = useState<'idle' | 'listening_wake' | 'listening_cmd' | 'thinking' | 'speaking'>('idle');
   const [activeTranscript, setActiveTranscript] = useState("");
   const [voiceAssistantPrefs, setVoiceAssistantPrefs] = useState({
@@ -4180,17 +4267,139 @@ export default function Profile() {
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([
     { role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Bugungi natijalaringiz haqida suhbatlashamizmi?" }
   ]);
+  const [voiceMessages, setVoiceMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const audioQueue = useRef<string[]>([]);
+  const blobQueue = useRef<{url: string, text: string}[]>([]);
+  const isPlayingAudio = useRef(false);
+  const isPrefetching = useRef(false);
+
+  const prefetchNext = async () => {
+    if (isPrefetching.current || audioQueue.current.length === 0) return;
+    
+    isPrefetching.current = true;
+    const text = audioQueue.current.shift();
+    if (!text) {
+      isPrefetching.current = false;
+      return;
+    }
+
+    try {
+      // Prioritize Cloud TTS (OpenAI/Gemini) for high quality
+      const resp = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice: "alloy" })
+      });
+
+      if (!resp.ok) throw new Error(`TTS failed with status ${resp.status}`);
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      blobQueue.current.push({ url, text });
+    } catch (err) {
+      console.warn("Cloud prefetch failed, using browser fallback:", err);
+      blobQueue.current.push({ url: "", text }); // Empty URL triggers fallbackToBrowserTTS
+    } finally {
+      isPrefetching.current = false;
+      if (audioQueue.current.length > 0) prefetchNext();
+      if (!isPlayingAudio.current) playNextInQueue();
+    }
+  };
+
+  const playNextInQueue = async () => {
+    if (isPlayingAudio.current) return;
+    
+    if (blobQueue.current.length === 0) {
+      if (audioQueue.current.length > 0) {
+        prefetchNext();
+      } else {
+        // Queue is completely empty - finish speaking state
+        if (assistantState === 'speaking') {
+           setAssistantState('listening_cmd');
+           // Auto-listen after speaking if in AI mode and Modal is not open
+           if (isAIVoiceAssistantActive && !isAIChatOpen) {
+              setTimeout(() => {
+                if (isAIVoiceAssistantActive && !isAIChatOpen) {
+                  startCommandListener();
+                }
+              }, 400);
+           }
+        }
+      }
+      return;
+    }
+
+    const { url, text } = blobQueue.current.shift()!;
+    isPlayingAudio.current = true;
+
+    if (!url) {
+      fallbackToBrowserTTS(text);
+      return;
+    }
+
+    try {
+      const audio = new Audio(url);
+      
+      audio.onended = () => {
+        isPlayingAudio.current = false;
+        URL.revokeObjectURL(url);
+        // Important: check if there's more in queue before triggering playNext (which might reset state)
+        playNextInQueue();
+      };
+      
+      audio.onerror = (e) => {
+        console.error("Audio payload error:", e);
+        URL.revokeObjectURL(url);
+        fallbackToBrowserTTS(text);
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.warn("Audio playback error:", err);
+      if (url) URL.revokeObjectURL(url);
+      fallbackToBrowserTTS(text);
+    }
+  };
+
+  const fallbackToBrowserTTS = (text: string) => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (uzVoice) utterance.voice = uzVoice;
+      utterance.lang = 'uz-UZ';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.1; // Slightly higher pitch for more "smooth" feel
+      
+      utterance.onend = () => {
+        isPlayingAudio.current = false;
+        playNextInQueue();
+      };
+      utterance.onerror = () => {
+        isPlayingAudio.current = false;
+        playNextInQueue();
+      };
+      window.speechSynthesis.speak(utterance);
+    } else {
+      isPlayingAudio.current = false;
+      playNextInQueue();
+    }
+  };
+
+  const speakText = (text: string) => {
+    const cleanText = cleanForTTS(text);
+    if (!cleanText) return;
+    
+    // Set state to speaking immediately
+    setAssistantState('speaking');
+    audioQueue.current.push(cleanText);
+    prefetchNext();
+  };
   const [activeChartIndex, setActiveChartIndex] = useState(0);
   const [waterIntake, setWaterIntake] = useState(1200); // ml
   const WATER_GOAL = 3000;
 
   const speakMotivation = () => {
-    if (!('speechSynthesis' in window)) {
-      alert("Kechirasiz, sizning brauzeringiz ovozli funksiyani qo'llab-quvvatlamaydi.");
-      return;
-    }
-
     const messages = [
       "Ajoyib ketmoqdasiz! Nafas olishni unutmang.",
       "Sizning chidamliligingiz hayratlanarli. Shunday davom eting!",
@@ -4200,11 +4409,7 @@ export default function Profile() {
     ];
 
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    const utterance = new SpeechSynthesisUtterance(randomMessage);
-    utterance.lang = 'uz-UZ';
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
+    speakText(randomMessage);
   };
 
   // Background Assistant Logic
@@ -4296,6 +4501,13 @@ export default function Profile() {
 
     recognition.onerror = (event: any) => {
       if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        if (event.error === 'network') {
+          console.warn("WakeWord Network error - retrying in 2s...");
+          setTimeout(() => {
+            if (isAIVoiceAssistantActive && !isAIChatOpen) startWakeWordListener();
+          }, 2000);
+          return;
+        }
         console.error("WakeWord Error:", event.error);
       }
       if (event.error === 'not-allowed') {
@@ -4324,30 +4536,184 @@ export default function Profile() {
     }
   };
 
+  const startWhisperRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Release mic as soon as recording stops
+        stream.getTracks().forEach(t => t.stop());
+
+        if ((recorder as any).noSpeechDetected) {
+          console.log("No speech detected, skipping STT.");
+          if (isAIVoiceAssistantActive && !isAIChatOpen) {
+            startWakeWordListener();
+          }
+          return;
+        }
+
+        if (audioBlob.size < 1000) { // Safer threshold for short words
+           if (isAIVoiceAssistantActive && !isAIChatOpen) {
+             console.log("Audio too short, restarting listener...");
+             startWakeWordListener(); // Go back to waiting for "Zonic" or restart command
+           }
+           return;
+        }
+
+        setAssistantState('thinking');
+        
+        try {
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.webm');
+          
+          let resp;
+          let retries = 2;
+          while (retries >= 0) {
+            try {
+              resp = await fetch('/api/stt', {
+                method: 'POST',
+                body: formData
+              });
+              break; 
+            } catch (fetchErr) {
+              if (retries === 0) throw fetchErr;
+              console.warn("STT Fetch failed, retrying...", fetchErr);
+              retries--;
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
+          
+          if (!resp) throw new Error("STT fetch failed after retries");
+          
+          if (resp.status === 429) {
+            console.warn("Cloud STT Quota Exceeded. Falling back to Browser Speech Recognition.");
+            setUseCloudSTT(false);
+            startWebSpeechRecognition(true);
+            return;
+          }
+
+          if (!resp.ok) throw new Error("STT Server Error");
+
+          const data = await resp.json();
+          if (data.text && data.text.trim()) {
+            setActiveTranscript(data.text);
+            sendVoiceCoachMessage(data.text);
+          } else {
+            console.log("No text recognized from Whisper");
+            startWakeWordListener();
+          }
+        } catch (err) {
+          console.error("Whisper Error:", err);
+          // Fallback to browser recognition on any serious error
+          startWebSpeechRecognition(true);
+        }
+      };
+
+      recorder.start();
+      
+      toast.info("Tinglayapman... (Gapiring)", {
+        icon: '🎙️',
+        duration: 2000,
+        style: { background: '#0A0A0A', color: '#fff', border: '1px solid #CCFF00' }
+      });
+
+      // Use Browser Speech Recognition purely for UI visual feedback and silence detection
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const cmdRec = new SpeechRecognition();
+        wakeRecognitionRef.current = cmdRec;
+        cmdRec.continuous = false;
+        cmdRec.interimResults = true;
+        try { cmdRec.lang = 'uz-UZ'; } catch (e) { cmdRec.lang = 'tr-TR'; }
+
+        let currentText = '';
+        let silenceTimeout: NodeJS.Timeout | null = null;
+        let hasSpoken = false;
+
+        cmdRec.onresult = (event: any) => {
+          hasSpoken = true;
+          let newText = '';
+          for (let i = 0; i < event.results.length; i++) {
+            newText += event.results[i][0].transcript;
+          }
+          if (newText !== currentText) {
+            currentText = newText;
+            setActiveTranscript(currentText + "..."); // Live feedback
+            
+            if (silenceTimeout) clearTimeout(silenceTimeout);
+            silenceTimeout = setTimeout(() => {
+              if (recorder.state === 'recording') recorder.stop();
+              try { cmdRec.stop(); } catch(e) {}
+            }, 2500); // 2.5s pause concludes the sentence
+          }
+        };
+
+        cmdRec.onerror = (e: any) => {
+           console.warn("Whisper UI Rec Error:", e.error);
+        };
+
+        cmdRec.onend = () => {
+           if (!hasSpoken && recorder.state === 'recording') {
+              (recorder as any).noSpeechDetected = true;
+           }
+           if (recorder.state === 'recording') recorder.stop();
+        };
+
+        cmdRec.start();
+
+        // Fallback safety timeout
+        setTimeout(() => {
+          if (recorder.state === 'recording') recorder.stop();
+          try { cmdRec.stop(); } catch(e) {}
+        }, 12000);
+
+      } else {
+        // Fallback for browsers without SpeechRecognition
+        setTimeout(() => {
+          if (recorder.state === 'recording') recorder.stop();
+        }, 7000);
+      }
+
+    } catch (err) {
+      console.error("Mic Error:", err);
+      toast.error("Mikrofondan foydalanib bo'lmadi");
+      setAssistantState('listening_wake');
+      startWakeWordListener();
+    }
+  };
+
   const handleWakeUp = () => {
+    // Stop any current OpenAI TTS playback
+    audioQueue.current = [];
+    isPlayingAudio.current = false;
     window.speechSynthesis.cancel();
+    
     setActiveTranscript("");
     startCommandListener();
   };
 
   const commandSessionStartRef = useRef<number>(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const startCommandListener = (isRestart = false) => {
-    console.log("Zonic: Starting command listener...");
-    if (!isRestart) {
-      commandSessionStartRef.current = Date.now();
-    }
-    
-    if (wakeRecognitionRef.current) {
-      try { wakeRecognitionRef.current.abort(); } catch(e) {}
+  const startWebSpeechRecognition = (isRestart = false) => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Brauzer ovozni tanishni qo'llab-quvvatlamaydi");
+      setAssistantState('listening_wake');
+      startWakeWordListener();
+      return;
     }
 
     setAssistantState('listening_cmd');
-    if (!isRestart) {
-      setActiveTranscript("");
-    }
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
     const cmdRec = new SpeechRecognition();
     wakeRecognitionRef.current = cmdRec;
     
@@ -4369,7 +4735,6 @@ export default function Profile() {
         newText += event.results[i][0].transcript;
       }
       
-      // If the text actually changed, reset the silence timeout
       if (newText !== currentText) {
         currentText = newText;
         setActiveTranscript(currentText);
@@ -4379,50 +4744,84 @@ export default function Profile() {
           if (wakeRecognitionRef.current === cmdRec) {
             cmdRec.stop();
           }
-        }, 2000); // Stop automatically after 2 seconds of silence
+        }, 4000);
       }
     };
 
     cmdRec.onerror = (event: any) => {
       if (silenceTimeout) clearTimeout(silenceTimeout);
       if (event.error !== 'aborted' && event.error !== 'no-speech') {
-        console.error("Command Listener Error:", event.error);
+        if (event.error === 'network') {
+          console.warn("Browser STT Network error - retrying...");
+          setTimeout(() => {
+            if (isAIVoiceAssistantActive && !isAIChatOpen) startWebSpeechRecognition(true);
+          }, 2000);
+          return;
+        }
+        console.error("Browser STT Error:", event.error);
       }
       if (isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
-        if (event.error === 'no-speech' && Date.now() - commandSessionStartRef.current < 60000) {
-           // Ignore and will restart onend
-        } else if (event.error !== 'aborted') {
-           setAssistantState('listening_wake');
-           startWakeWordListener();
-        }
+        setAssistantState('listening_wake');
+        startWakeWordListener();
       }
     };
 
     cmdRec.onend = () => {
       if (silenceTimeout) clearTimeout(silenceTimeout);
-      console.log("Command listener ended. Final text:", currentText);
+      console.log("Browser STT ended. Text:", currentText);
       if (currentText.trim()) {
-        sendAIChatMessage(currentText);
+        if (isAIVoiceAssistantActive) {
+          sendVoiceCoachMessage(currentText);
+        } else {
+          sendAIChatMessage(currentText);
+        }
         setActiveTranscript("");
       } else if (isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
+        // If we are in voice coach mode and no speech was detected, 
+        // keep listening for up to 60 seconds from the initial wake up
         if (Date.now() - commandSessionStartRef.current < 60000) {
           setTimeout(() => {
-            try { startCommandListener(true); } catch(e) {}
-          }, 50);
+            if (isAIVoiceAssistantActive && wakeRecognitionRef.current === cmdRec) {
+              try { cmdRec.start(); } catch(e) { startWebSpeechRecognition(true); }
+            }
+          }, 100);
         } else {
           setAssistantState('listening_wake');
           startWakeWordListener();
         }
       }
     };
-    
+
     try {
       cmdRec.start();
-    } catch (e) {
-      console.error("Command listener start failure:", e);
-      setAssistantState('listening_wake');
-      startWakeWordListener();
+    } catch(e) {
+      console.warn("SpeechRec start failed:", e);
     }
+  };
+
+  const startCommandListener = async (isRestart = false) => {
+    console.log("Zonic: Starting command listener...");
+    
+    if (!isRestart) {
+      commandSessionStartRef.current = Date.now();
+      setActiveTranscript("");
+    }
+    
+    if (wakeRecognitionRef.current) {
+      try { wakeRecognitionRef.current.abort(); } catch(e) {}
+    }
+
+    setAssistantState('listening_cmd');
+    setActiveTranscript("");
+
+    // Use Whisper for Voice Coach if possible, fallback to Web Speech for Chat
+    if (isAIVoiceAssistantActive && !isAIChatOpen && useCloudSTT) {
+      startWhisperRecording();
+      return;
+    }
+
+    // Default to Browser Speech Recognition (e.g. for Chat or as fallback)
+    startWebSpeechRecognition(isRestart);
   };
 
   useEffect(() => {
@@ -4436,7 +4835,12 @@ export default function Profile() {
   }, [isAIVoiceAssistantActive, isAIChatOpen]);
 
   const sendAIChatMessage = async (text: string) => {
-    if (!text.trim()) return;
+    const tLower = text.trim().toLowerCase();
+    const hallucinations = ["[silent]", "silent", "tinglaganingiz uchun rahmat", "tinglaganingiz uchun rahmat.", ".", ",", " "];
+    if (!text.trim() || hallucinations.includes(tLower) || (tLower.length < 3 && !['ha', 'ok'].includes(tLower))) {
+      console.log("Ignored silent/hallucinated speech:", text);
+      return;
+    }
 
     // Add user message and a placeholder for the AI response
     const newUserMsg = { role: 'user' as const, text };
@@ -4445,108 +4849,185 @@ export default function Profile() {
     setAssistantState('thinking');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
+      const daysUz = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
+      const now = new Date();
+      const currentDayUz = daysUz[now.getDay()];
+      const currentDateStr = now.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
       // Prepare context about user stats
+      const territoryStats = ACTIVITY_DATA.map(a => `- ${a.hudud} (${a.date}): ${a.distance} km yugurildi, ${a.steps} qadam tashlandi.`).join("\n        ");
+      
+      const kmWeekly = WEEKLY_DATA.map(w => `${w.label}: ${w.value}km`).join(", ");
+      const kmMonthly = MONTHLY_DATA.map(m => `${m.label}: ${m.value}km`).join(", ");
+      const kmYearly = YEARLY_DATA.map(y => `${y.label}: ${y.value}km`).join(", ");
+
+      const qadamWeekly = WEEKLY_DATA.map(w => `${w.label}: ${Math.floor((w.value / 100) * 20000)} qadam`).join(", ");
+      const qadamMonthly = MONTHLY_DATA.map(m => `${m.label}: ${Math.floor((m.value / 100) * 20000)} qadam`).join(", ");
+      const qadamYearly = YEARLY_DATA.map(y => `${y.label}: ${Math.floor((y.value / 100) * 20000)} qadam`).join(", ");
+
+      const hududHaftaVal = [30, 45, 60, 55, 85, 95, 40];
+      const hududOyVal = [50, 75, 45, 90, 60];
+      const hududYilVal = [30, 45, 60, 50, 80, 95, 40, 55, 75, 85, 60, 90];
+
+      const hududWeekly = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"].map((d, i) => `${d}: ${(hududHaftaVal[i] * 0.15).toFixed(1)}km²`).join(", ");
+      const hududMonthly = ["H1", "H2", "H3", "H4", "H5"].map((h, i) => `${h}: ${(hududOyVal[i] * 0.15).toFixed(1)}km²`).join(", ");
+      const hududYearly = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"].map((m, i) => `${m}: ${(hududYilVal[i] * 0.15).toFixed(1)}km²`).join(", ");
+
       const statsContext = `
-        User Stats:
-        - Distance: 47.3 km (Goal: 60km this week)
-        - Pace: 5'12" / km
-        - Heart Rate: 142 bpm
-        - Water Intake: ${waterIntake} ml / 3000 ml
-        - Active Goals: ${goals.map(g => g.title).join(", ")}
-        - Recent Achievement: Yunusobod Qiroli
-        - Recent PB: 1km in 4:12
+        Bugungi sana: ${currentDateStr}
+        Bugungi hafta kuni: ${currentDayUz}
+
+        Foydalanuvchi ma'lumotlari (User Stats):
+        - Umumiy Masofa: 47.3 km (Maqsad: bu hafta 60km)
+        - O'rtacha Temp (Pace): 5'12" / km
+        - O'rtacha Puls: 142 bpm
+        - Suv sarfi: ${waterIntake} ml / 3000 ml
+        - Faol maqsadlar: ${goals.map(g => g.title).join(", ")}
+        - So'nggi Yutuqlar: Yunusobod Qiroli
+        - Shaxsiy Rekord: 1km masofani 4:12 da bosib o'tdi
+
+        ILOVADAGI DIAGRAMMALAR VA GRAFIKLAR (Haqiqiy ma'lumotlar):
+
+        1. Masofa (KM) grafiklari:
+           - Haftalik (Dushanba-Yakshanba): ${kmWeekly}
+           - Oylik (May-Sentyabr): ${kmMonthly}
+           - Yillik: ${kmYearly}
+
+        2. Qadam (Steps) grafiklari:
+           - Haftalik: ${qadamWeekly}
+           - Oylik: ${qadamMonthly}
+           - Yillik: ${qadamYearly}
+
+        3. Hudud Egallash grafiklari (kv.km):
+           - Haftalik: ${hududWeekly}
+           - Oylik: ${hududMonthly}
+           - Yillik: ${hududYearly}
+
+        Hudud Egallash (Territory Conquest) So'nggi Yangiliklari:
+        ${territoryStats}
 
         Personality: You are a motivating, professional high-end sports coach. 
         Language: Uzbek (O'zbekcha).
         Response Style: Concise, encouraging, and insightful. Use emojis.
       `;
 
-      // Start streaming for better perceived speed
-      const result = await ai.models.generateContentStream({
-        model: "gemini-3.1-pro-preview", 
-        contents: [
-          ...chatMessages.filter((m, i) => !(i === 0 && m.role === 'model')).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
-          { role: 'user', parts: [{ text: text }] }
-        ],
-        config: {
-          systemInstruction: `SIZ 'ZONIC' ILOVASINING SHAXSIY AI MURABBIYI VA SUDYASISIZ. 
+      const systemInstruction = `SIZ 'ZONIC' ILOVASINING SHAXSIY AI MURABBIYI VA SUDYASISIZ. 
           
-          USER STATS AND CONTEXT:
+          FOYDALANUVCHINING HAQIQIY STATISTIKASI (BUGUN ${currentDayUz}, ${currentDateStr}):
           ${statsContext}
 
-          MULOQOT USLUBI (JUDA MUHIM):
-          1. Sof o'zbek tilida, samimiy va erkin gapiring.
-          2. 'Siz' deb hurmat bilan, lekin yaqin do'stdek/akadek ('jigarim', 'omon bo'ling', 'boringizga shukur') murojaat qiling.
-          3. Ovozli rejimda o'qish qulay bo'lishi uchun gaplarni qisqa va lo'nda tuzing.
-          4. Toshkent va voha shevalaridagi iliq so'zlarni joyida ishlating (masalan: 'G'ayrat qilinga', 'Harakatdan baraka topasiz').
-          5. Sport terminlarini o'zbekcha tushuntiring.
-          6. FAQAT matn ko'rinishida javob bering, markdown belgilarini umuman ishlatmang.
-          7. Emojilarni faqat gapning eng oxirida ishlating.
-          8. Agar foydalanuvchi tushunmasa, soddaroq qilib qayta tushuntiring.`
-        }
+          MUHIM KO'RSATMA:
+          1. Foydalanuvchi gaplarining MA'NOSINI DANGAL VA TO'G'RI tushunib, SHUNGA MOS JO'YALI, MANTIQIY va aqlli javob qaytaring. Foydalanuvchining ahvolini, gapirayotgan kontekstini chuqur tahlil qiling. Agar jumlasi chala bo'lsa, moslashtirib mantiqan to'ldirib oling.
+          2. Yutuqlarni so'raganda FAQAT bugungacha bo'lgan natijalarni ayting. Kelajakni bashorat qilmang, axborot yo'qligini tushuntiring.
+          3. Diagrammalardagi raqamlarga juda aniq tayaning.
+          4. O'zbek tilida juda samimiy, do'stona va o'rinli (keraksiz o'lchov birliklarini takrorlamasdan) javob bering. Rofqalar va metrlarni takrorlayvermang.
+
+          MULOQOT USLUBI (PHONETIC & SPEECH OPTIMIZED):
+          1. Sof, ravon va aqlli o'zbek tilida gapiring. Imlo xatolariga yo'l qo'ymang.
+          2. 'Siz' deb murojaat qiling, jonkuyar va dalda beruvchi ohangda bo'ling.
+          3. 'Baraka toping', 'G'ayrat jigarim', 'Omon bo'ling' kabi so'zlarni o'rnida ishlating.
+          4. Ovozli rejim ehtimoli uchun gaplarni lo'nda va tabiiy qilib tuzing.
+          5. Murakkab raqamlarni so'z bilan, qisqa qilib tushuntiring, lekim har gapda 'metr/kilometr' deb takrorlamang.
+          6. FAQAT oddiy matn qaytaring, hech qanday belgi (*, #, _, [, ]) ishlatmang.
+          7. Emojilarni faqat gap oxirida kam ishlating.
+          8. 'O'rtoq', 'Uka', 'Do'stim' deb yaqin oling.`;
+
+      // Start streaming for better perceived speed
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemInstruction },
+            ...chatMessages.filter((m, i) => !(i === 0 && m.role === 'model')).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text })),
+            { role: 'user', content: text }
+          ]
+        })
       });
 
-      // Add a placeholder message for the AI
+      if (!response.ok) {
+        throw new Error(`Chat API xatosi: ${response.status}`);
+      }
+
       setChatMessages(prev => [...prev, { role: 'model', text: "" }]);
       setIsTyping(false);
 
-      if (isAIVoiceAssistantActive || isHandsFree) {
-        window.speechSynthesis.cancel(); // Clear queue
+      // Chat TTS logic - speak if hands-free or explicitly voice active
+      const shouldSpeakChat = isHandsFree || isAIVoiceAssistantActive;
+
+      if (shouldSpeakChat) {
+        audioQueue.current = [];
+        isPlayingAudio.current = false;
         setAssistantState('speaking');
       }
 
       let fullText = "";
       let sentenceBuffer = "";
+      let streamBuffer = "";
 
-      for await (const chunk of result) {
-        const chunkText = (chunk as any).text || "";
-        fullText += chunkText;
-        sentenceBuffer += chunkText;
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          streamBuffer += decoder.decode(value, { stream: true });
+          const lines = streamBuffer.split("\n");
+          streamBuffer = lines.pop() || ""; // Keep incomplete line in buffer
 
-        setChatMessages(prev => {
-          const lastIdx = prev.length - 1;
-          const next = [...prev];
-          next[lastIdx] = { ...next[lastIdx], text: fullText };
-          return next;
-        });
-
-        if (isAIVoiceAssistantActive || isHandsFree) {
-          const match = sentenceBuffer.match(/([^\.!\?]+[\.!\?]+)/);
-          if (match) {
-            const sentence = match[0];
-            sentenceBuffer = sentenceBuffer.slice(sentence.length);
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
             
-            const cleanText = sentence.replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-]/gi, '').replace(/\*/g, '');
-            if (cleanText.trim()) {
-               const utterance = new SpeechSynthesisUtterance(cleanText);
-               if (uzVoice) utterance.voice = uzVoice;
-               utterance.lang = 'uz-UZ';
-               window.speechSynthesis.speak(utterance);
+            const dataStr = trimmedLine.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") continue;
+            
+            try {
+              const data = JSON.parse(dataStr);
+              const chunkText = data.choices?.[0]?.delta?.content || "";
+              if (chunkText) {
+                fullText += chunkText;
+                sentenceBuffer += chunkText;
+
+                setChatMessages(prev => {
+                  if (prev.length === 0) return prev;
+                  const lastIdx = prev.length - 1;
+                  const next = [...prev];
+                  if (next[lastIdx].role === 'model') {
+                    next[lastIdx] = { ...next[lastIdx], text: fullText };
+                  }
+                  return next;
+                });
+
+                if (shouldSpeakChat) {
+                  const match = sentenceBuffer.match(/([^\.!\?]{15,}[\.!\?]+(?:\s+|$))/);
+                  if (match) {
+                    const sentence = match[0];
+                    sentenceBuffer = sentenceBuffer.slice(sentence.length);
+                    speakText(sentence);
+                  }
+                }
+              }
+            } catch (e) {
+              // Ignore invalid JSON in chunks
             }
           }
         }
       }
 
-      if (isAIVoiceAssistantActive || isHandsFree) {
-        const cleanRemaining = sentenceBuffer.replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-]/gi, '').replace(/\*/g, '');
-        if (cleanRemaining.trim()) {
-           const utterance = new SpeechSynthesisUtterance(cleanRemaining);
-           if (uzVoice) utterance.voice = uzVoice;
-           utterance.lang = 'uz-UZ';
-           window.speechSynthesis.speak(utterance);
+      if (shouldSpeakChat) {
+        if (sentenceBuffer.trim()) {
+           speakText(sentenceBuffer);
         }
         
-        // Polling to detect when TTS is done (more reliable than onend)
         const checkDone = setInterval(() => {
-          if (!window.speechSynthesis.speaking) {
+          if (!isPlayingAudio.current && audioQueue.current.length === 0 && blobQueue.current.length === 0) {
              clearInterval(checkDone);
-             if (isAIVoiceAssistantActive) {
-                startCommandListener();
-             } else {
-                setAssistantState('idle');
-             }
+             setAssistantState('idle');
           }
         }, 300);
       } else {
@@ -4554,21 +5035,159 @@ export default function Profile() {
       }
 
     } catch (error) {
-      console.error("Gemini Error:", error);
+      console.error("Chat Error:", error);
+      toast.error("AI bilan bog'lanib bo'lmadi");
       const errorMsg = "Uzur, aloqa o'rnatishda xatolik yuz berdi. Qaytadan aytib ko'ring.";
       setChatMessages(prev => [...prev, { role: 'model', text: errorMsg }]);
       setIsTyping(false);
       
       if (isAIVoiceAssistantActive) {
         setAssistantState('speaking');
-        const utterance = new SpeechSynthesisUtterance(errorMsg);
-        if (uzVoice) utterance.voice = uzVoice;
-        utterance.lang = 'uz-UZ';
-        utterance.onend = () => startWakeWordListener();
-        window.speechSynthesis.speak(utterance);
+        speakText(errorMsg);
+        
+        const checkErrDone = setInterval(() => {
+          if (!isPlayingAudio.current && audioQueue.current.length === 0) {
+            clearInterval(checkErrDone);
+            startWakeWordListener();
+          }
+        }, 300);
       } else {
         setAssistantState('idle');
       }
+    }
+  };
+
+  const sendVoiceCoachMessage = async (text: string) => {
+    const tLower = text.trim().toLowerCase();
+    const hallucinations = ["[silent]", "silent", "tinglaganingiz uchun rahmat", "tinglaganingiz uchun rahmat.", ".", ",", " "];
+    if (!text.trim() || hallucinations.includes(tLower) || (tLower.length < 3 && !['ha', 'ok'].includes(tLower))) {
+      console.log("Ignored silent/hallucinated Web/Whisper speech:", text);
+      if (isAIVoiceAssistantActive) {
+        setAssistantState('listening_wake');
+        startWakeWordListener();
+      } else {
+        setAssistantState('idle');
+      }
+      return;
+    }
+    
+    setAssistantState('thinking');
+
+    try {
+      const daysUz = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
+      const now = new Date();
+      const currentDayUz = daysUz[now.getDay()];
+      const currentDateStr = now.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      const statsSummary = `Bugun ${currentDayUz}, ${currentDateStr}. Masofa: 47.3 km (60km maqsad). Temp: 5'12". Puls: 142. Suv: ${waterIntake}/3000ml.`;
+
+      const systemInstruction = `SIZ 'ZONIC' OVOZLI AI MURABBIYISIZ. 
+          
+          FOYDALANUVCHI BILAN FAQAT OVOZLI MULOQOT QILYAPSIZ. 
+          
+          VAZIFANGIZ:
+          1. Foydalanuvchi gaplarining MA'NOSINI DANGAL VA TO'G'RI tushunib, SHUNGA MOS JO'YALI, MANTIQIY va aqlli javob qaytaring. Foydalanuvchining ahvolini, gapirayotgan kontekstini chuqur tahlil qiling.
+          2. Gapni qisqa (max 5-8 so'z), lo'nda va ravon qiling. O'zbek tilida juda samimiy, akadek murojaat qiling ('Baraka top', 'G'ayrat jigarim', 'Omon bo'l').
+          3. Ohang: Dalda beruvchi, aqlli va ishonchli. Bema'ni gaplarni chetlab o'ting, so'zlarni to'g'ri o'rnida qo'llang.
+          4. Faqat o'tgan va bugungi (${currentDayUz}, ${currentDateStr}) natijalarni ayting. Kelajak haqida gapirmang, kutish kerakligini tushuntiring.
+          5. MUHIM: Raqamlar va o'lchov birliklarini (masalan, kilometr, metr, qadam) har bir gapda takrorlayvermang. So'zlarni o'rinli, mantiqan to'g'ri va me'yorida ishlating.
+          6. FAQAT oddiy matn qaytaring. Hech qanday belgi (*, #, [, ]) ishlatmang.`;
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemInstruction },
+            ...voiceMessages.slice(-5).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text })),
+            { role: 'user', content: text }
+          ]
+        })
+      });
+
+      if (!response.ok) throw new Error(`Voice Coach API error: ${response.status}`);
+
+      setVoiceMessages(prev => [...prev, { role: 'user', text }]);
+      setAssistantState('speaking');
+      audioQueue.current = [];
+      isPlayingAudio.current = false;
+
+      let fullText = "";
+      let sentenceBuffer = "";
+      let streamBuffer = "";
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          streamBuffer += decoder.decode(value, { stream: true });
+          const lines = streamBuffer.split("\n");
+          streamBuffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
+            const dataStr = trimmedLine.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") continue;
+            
+            try {
+              const data = JSON.parse(dataStr);
+              const chunkText = data.choices?.[0]?.delta?.content || "";
+              if (chunkText) {
+                fullText += chunkText;
+                sentenceBuffer += chunkText;
+
+                // Optimized sentence splitting for fluid speech
+                // Look for punctuation followed by space, avoiding decimals
+                const match = sentenceBuffer.match(/([^\.!\?]{15,}[\.!\?]+(?:\s+|$))/);
+                if (match) {
+                  const sentence = match[0];
+                  // Avoid splitting on short decimals or abbreviations
+                  if (!sentence.match(/[0-9]\.[0-9]\s*$/)) {
+                    sentenceBuffer = sentenceBuffer.slice(sentence.length);
+                    speakText(sentence);
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (sentenceBuffer.trim()) {
+        speakText(sentenceBuffer);
+      }
+
+      setVoiceMessages(prev => [...prev, { role: 'model', text: fullText }]);
+
+      // Robust check for when AI finishes speaking
+      const checkAndRestart = () => {
+        if (!isPlayingAudio.current && audioQueue.current.length === 0 && blobQueue.current.length === 0) {
+           if (isAIVoiceAssistantActive) {
+              console.log("AI finished speaking. Listening again...");
+              startCommandListener();
+           } else {
+              setAssistantState('idle');
+           }
+        } else {
+          setTimeout(checkAndRestart, 400);
+        }
+      };
+      
+      // Start checking after a short delay to allow audio to start
+      setTimeout(checkAndRestart, 1500);
+
+    } catch (error) {
+      console.error("Voice Coach Error:", error);
+      toast.error("Aloqa uzildi");
+      const errorMsg = "Aloqada xatolik bo'ldi. Uzr.";
+      speakText(errorMsg);
+      setAssistantState('idle');
+      setTimeout(() => startWakeWordListener(), 3000);
     }
   };
 
@@ -4921,20 +5540,9 @@ export default function Profile() {
     const text = customText || "Xayrli kun! Men Zonic AI yordamchisiman. Bugun yangi marralarni zabt etishga tayyormisiz?";
     
     setIsVoiceTesting(true);
-    try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (uzVoice) utterance.voice = uzVoice;
-      utterance.lang = 'uz-UZ';
-      utterance.volume = settings.voiceVolume / 100;
-      utterance.pitch = 1.0;
-      utterance.rate = 1.0;
-      utterance.onend = () => setIsVoiceTesting(false);
-      utterance.onerror = () => setIsVoiceTesting(false);
-      window.speechSynthesis.speak(utterance);
-    } catch (error) {
-      console.error("TTS xatosi:", error);
-      setIsVoiceTesting(false);
-    }
+    speakText(text);
+    // Rough estimate for testing state
+    setTimeout(() => setIsVoiceTesting(false), 3000);
   };
 
   const toggleSetting = async (key: keyof typeof settings, label: string) => {
@@ -4955,22 +5563,21 @@ export default function Profile() {
     const newValue = !settings[key];
     setSettings(prev => ({ ...prev, [key]: newValue }));
     
-    if (key === 'aiVoiceAssistant' && newValue) {
-      setIsAIVoiceAssistantActive(true);
-      setAssistantState('speaking');
-      
-      // Greet the user via voice with weather info and tips
-      const greeting = "Salom! Men sizning ovozli AI murabbiyingizman. Bugun Toshkentda havo juda yaxshi, yigirma to'rt daraja iliq va ochiq. Yugurish uchun ajoyib vaqt! Biror narsa kerak bo'lsa 'Hey Zonic' deb chaqiring, men doimo tinglayman.";
-      const utterance = new SpeechSynthesisUtterance(greeting);
-      if (uzVoice) utterance.voice = uzVoice;
-      utterance.lang = 'uz-UZ';
-      utterance.onend = () => {
-        startCommandListener();
-      };
-      window.speechSynthesis.speak(utterance);
+    if (key === 'aiVoiceAssistant') {
+      setIsAIVoiceAssistantActive(newValue);
+      if (newValue) {
+        const greeting = "Salom! Men OpenAI va Gemini texnologiyalari asosida ishlovchi Zonic murabbiyman. Sizni eshityapman, savolingiz bo'lsa shunchaki so'rang.";
+        speakText(greeting);
+        // Follow-up listening is now handled by the playNextInQueue auto-listening logic
+      } else {
+        try { 
+          wakeRecognitionRef.current?.abort(); 
+          wakeRecognitionRef.current = null;
+        } catch(e) {}
+        if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+        setAssistantState('idle');
+      }
       return;
-    } else if (key === 'aiVoiceAssistant' && !newValue) {
-      setIsAIVoiceAssistantActive(false);
     }
 
     if (newValue) {
@@ -6202,7 +6809,7 @@ export default function Profile() {
                           assistantState === 'listening_wake' ? "text-primary" : "text-white"
                         )}>
                           {assistantState === 'listening_wake' ? '"Hey Zonic" kutilyapti' : 
-                           assistantState === 'listening_cmd' ? (activeTranscript ? `"${activeTranscript}"` : "Eshityapman...") :
+                           assistantState === 'listening_cmd' ? (isAIVoiceAssistantActive && !isAIChatOpen ? "Ovozni yozib olyapman..." : (activeTranscript ? `"${activeTranscript}"` : "Eshityapman...")) :
                            assistantState === 'thinking' ? "Tahlil qilyapman..." :
                            assistantState === 'speaking' ? "Gapiryapman..." : "AI Murabbiy Faol"}
                         </p>
@@ -7466,6 +8073,7 @@ export default function Profile() {
         setCompletedGoals={setCompletedGoals}
         initialTab={goalsModalParams.tab}
         initialPeriod={goalsModalParams.period}
+        speakText={speakText}
       />
 
       {/* Marathon Plan Modal */}
@@ -7483,7 +8091,7 @@ export default function Profile() {
       />
 
       {/* AI Chat Modal */}
-      <AIChatModal
+    <AIChatModal
         isOpen={isAIChatOpen}
         onClose={() => setIsAIChatOpen(false)}
         messages={chatMessages}
@@ -7493,6 +8101,9 @@ export default function Profile() {
         isHandsFree={isHandsFree}
         setIsHandsFree={setIsHandsFree}
         uzVoice={uzVoice}
+        voiceEnabledByDefault={false}
+        assistantState={assistantState}
+        speakText={speakText}
       />
 
       {/* Floating AI Button */}
