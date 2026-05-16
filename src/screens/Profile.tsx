@@ -681,12 +681,17 @@ const AIVoiceSetupModal = ({ isOpen, onClose, prefs, setPrefs }: {
 const cleanForTTS = (text: string) => {
   if (!text) return "";
   let t = text
-    .replace(/km²/gi, " kvadrat kilometir")
-    .replace(/km/gi, " kilometir")
-    .replace(/kg/gi, " kilogiram")
-    .replace(/m/gi, " metir")
-    .replace(/bpm/gi, " zarba")
-    .replace(/ml/gi, " millilitir")
+    .replace(/km²\b/gi, " kvadrat kilometir")
+    .replace(/(\d+)\s*km\b/gi, "$1 kilometir")
+    .replace(/(\d+)\s*kg\b/gi, "$1 kilogiram")
+    .replace(/(\d+)\s*m\b/gi, "$1 metir")
+    .replace(/\bkm\b/gi, " kilometir")
+    .replace(/\bkg\b/gi, " kilogiram")
+    .replace(/\bm\b/gi, " metir")
+    .replace(/(\d+)\s*bpm\b/gi, "$1 zarba")
+    .replace(/\bbpm\b/gi, " zarba")
+    .replace(/(\d+)\s*ml\b/gi, "$1 millilitir")
+    .replace(/\bml\b/gi, " millilitir")
     .replace(/([0-9])'([0-9]{2})"/g, "$1 daqiqa $2 soniya") // Pace 5'12" -> 5 daqiqa 12 soniya
     .replace(/([0-9]+)\.([0-9]+)/g, "$1 butun $2") // 4.5 -> 4 butun 5
     // Uzbek phonetics for better browser TTS pronunciation
