@@ -177,13 +177,14 @@ async function startServer() {
         return res.end();
       } catch (error: any) {
         lastError = error;
-        const isQuotaError = error.status === 429 || error.statusCode === 429 || 
+        const isQuotaError = error.status === 429 || error.statusCode === 429 ||
                             (error.message && (error.message.includes('429') || error.message.includes('quota')));
         
         const isNotFoundError = error.status === 404;
+        const isUnavailableError = error.status === 503;
 
-        if (isQuotaError || isNotFoundError) {
-          console.warn(`Model ${modelName} ${isQuotaError ? 'quota exceeded' : 'not found'}, trying next model...`);
+        if (isQuotaError || isNotFoundError || isUnavailableError) {
+          console.warn(`Model ${modelName} ${isQuotaError ? 'quota' : (isNotFoundError ? 'not found' : 'unavailable')}, trying next model...`);
           continue;
         }
         // For other errors, also try next but log it
@@ -193,64 +194,83 @@ async function startServer() {
     }
 
     console.error("All Chat models failed:", lastError);
-    res.status(500).json({ error: "All Gemini models failed or hit quota.", details: lastError?.message });
+    res.status(503).json({ error: "All Gemini models are temporarily unavailable or failing.", details: lastError?.message });
   });
 
-  app.post("/api/tts", async (req, res) => {
+   app.post("/api/tts", async (req, res) => {
     const { text, voice = "alloy" } = req.body;
     
     // Try OpenAI first, but handle failure gracefully
-    try {
-      const client = getOpenAI();
-      if (client) {
-        const mp3 = await client.audio.speech.create({
-          model: "tts-1",
-          voice: voice as any,
-          input: text,
-        });
-        const buffer = Buffer.from(await mp3.arrayBuffer());
-        res.set("Content-Type", "audio/mpeg");
-        return res.send(buffer);
-      }
-    } catch (error: any) {
-      if (error.status === 429) {
-        console.warn("OpenAI TTS Quota Exceeded");
-      } else {
-        console.warn("OpenAI TTS failed:", error.message);
+    const maxRetries = 2;
+    let lastError: any = null;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const client = getOpenAI();
+        if (client) {
+          const mp3 = await client.audio.speech.create({
+            model: "tts-1",
+            voice: voice as any,
+            input: text,
+          }, { timeout: 8000 }); // 8s timeout
+          const buffer = Buffer.from(await mp3.arrayBuffer());
+          res.set("Content-Type", "audio/mpeg");
+          return res.send(buffer);
+        }
+        break; // No client
+      } catch (openaiErr: any) {
+        lastError = openaiErr;
+        const isQuota = openaiErr.status === 429 || (openaiErr.message && openaiErr.message.includes('quota'));
+        if (isQuota) {
+          console.warn("OpenAI TTS Quota Exceeded, switching to Gemini...");
+          break;
+        }
+        console.warn(`OpenAI TTS attempt ${i+1} failed:`, openaiErr.message);
+        if (i < maxRetries - 1) await new Promise(r => setTimeout(r, 400));
       }
     }
 
     // Gemini TTS Fallback
-    try {
-      const response = await genAI.models.generateContent({
-        model: "gemini-3.1-flash-tts-preview",
-        contents: [{ parts: [{ text }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' },
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+          const response = await genAI.models.generateContent({
+            model: "gemini-3.1-flash-tts-preview",
+            contents: [{ parts: [{ text }] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: 'Kore' },
+                },
+              },
             },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const samples = Buffer.from(base64Audio, 'base64');
-        const wavBuffer = encodeWAV(samples, 24000);
-        res.set("Content-Type", "audio/wav");
-        return res.send(wavBuffer);
-      }
-    } catch (error: any) {
-      if (error.message?.includes('429') || error.status === 429) {
-        console.warn("Gemini TTS Quota Exceeded");
-        return res.status(429).json({ error: "TTS Quota Exceeded" });
-      }
-      console.error("Gemini TTS Error:", error.message);
+          });
+    
+          const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+          if (base64Audio) {
+            const samples = Buffer.from(base64Audio, 'base64');
+            const wavBuffer = encodeWAV(samples, 24000);
+            res.set("Content-Type", "audio/wav");
+            return res.send(wavBuffer);
+          }
+          break;
+        } catch (geminiErr: any) {
+          lastError = geminiErr;
+          const isQuota = geminiErr.status === 429 || (geminiErr.message && geminiErr.message.includes('quota'));
+          if (isQuota) {
+             console.warn("Gemini TTS Quota Exceeded");
+             break;
+          }
+          console.warn(`Gemini TTS attempt ${i+1} failed:`, geminiErr.message);
+          if (i < maxRetries - 1) await new Promise(r => setTimeout(r, 400));
+        }
     }
 
-    res.status(500).json({ error: "TTS generation failed" });
+    if (lastError?.status === 429) {
+      return res.status(429).json({ error: "TTS Quota Exceeded" });
+    }
+    console.error("All Cloud TTS providers failed:", lastError?.message);
+    res.status(500).json({ error: "Cloud TTS generation failed" });
   });
 
   function encodeWAV(samples: Buffer, sampleRate: number) {

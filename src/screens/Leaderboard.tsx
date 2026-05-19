@@ -8,11 +8,12 @@ import { cn } from "@/src/lib/utils";
 const RUNNER_DATA = {
   GLOBAL: {
     top: [
-      { rank: 2, name: "Zafar E.", km: "145.8 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBaLjnWMoOFacgbDj7LFDBuQ8zazHoUR6RB1K1fEw5XEZIJv8YG-7rfDt9uppd4duF3VIj1-vFHfB-OyWjZ5MUryViis1zkX4MfGxZFlYz09VWPR__9gToEzSDcQASuTWi7prCEYv_ElCVg34oxoghoqSZxgvHBTMEPmDv3hqAyFCkzFEfctmaIk1s6nEyPgaKhhRyUe34spsMFUfnt6flGZhlArcwIYXsaUAyPUdQt0ieW3b5hcW7eXUbrb1tZeVjy1tV4XMdzmBgQ", runs: "12 runs" },
-      { rank: 1, name: "Alisher K.", km: "152.4 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBaMBg52joH-qAkQ_jY3iH8yLB6U_pDgj6Xmw0BxRSSMoz5UNbNR60nhysJg0xUGRBQPEsrBnM5zkRwcxY8Bac3J-_-ldP3qWJnxegE3yaoXstEsAn8L0QFwOl7va0y5imAzOlAdyOiaZmCzeGq9UGry1CH2kGDL9SXugRD7XsLz3j_x4SxjrCCDgAqNh_dpijRjHcZlMbwmOw9uD1cwna2QP6n2IA1cJ2Tx9CFd1f36QlYvfllUhtn-Iw7y7eUC7tFcaIx2eGQzzln", runs: "15 runs" },
-      { rank: 3, name: "Elena R.", km: "138.2 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCGclQQc8LODIZ6H8N-fjMAg3CmvDOvAKOhzQhaVCxKLMKyGpWBJ1ciPbskzXa8JW2zqkmFkwykb_9eznoyQQnWg9-iI-bONF_ymGX6rUsalY1-p7FmoCevvVN3mDC5_X_ui-fgHOBDZ1zpDoC8QvZyYBGndgPkUkbgVS4VIz6A2_qgtiN43eDSKDkUd34q1Osn-t8L4mFmzgecCXXPC7H_TorcpW6EhWASLJdTrxrgW_cESLGKsvD3UoEboQ9KoR9zYnLVPKQHs3ta", runs: "10 runs" },
+      { id: "2", rank: 2, name: "Zafar E.", km: "145.8 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBaLjnWMoOFacgbDj7LFDBuQ8zazHoUR6RB1K1fEw5XEZIJv8YG-7rfDt9uppd4duF3VIj1-vFHfB-OyWjZ5MUryViis1zkX4MfGxZFlYz09VWPR__9gToEzSDcQASuTWi7prCEYv_ElCVg34oxoghoqSZxgvHBTMEPmDv3hqAyFCkzFEfctmaIk1s6nEyPgaKhhRyUe34spsMFUfnt6flGZhlArcwIYXsaUAyPUdQt0ieW3b5hcW7eXUbrb1tZeVjy1tV4XMdzmBgQ", runs: "12 runs" },
+      { id: "4", rank: 1, name: "Alisher K.", km: "152.4 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBaMBg52joH-qAkQ_jY3iH8yLB6U_pDgj6Xmw0BxRSSMoz5UNbNR60nhysJg0xUGRBQPEsrBnM5zkRwcxY8Bac3J-_-ldP3qWJnxegE3yaoXstEsAn8L0QFwOl7va0y5imAzOlAdyOiaZmCzeGq9UGry1CH2kGDL9SXugRD7XsLz3j_x4SxjrCCDgAqNh_dpijRjHcZlMbwmOw9uD1cwna2QP6n2IA1cJ2Tx9CFd1f36QlYvfllUhtn-Iw7y7eUC7tFcaIx2eGQzzln", runs: "15 runs" },
+      { id: "5", rank: 3, name: "Elena R.", km: "138.2 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCGclQQc8LODIZ6H8N-fjMAg3CmvDOvAKOhzQhaVCxKLMKyGpWBJ1ciPbskzXa8JW2zqkmFkwykb_9eznoyQQnWg9-iI-bONF_ymGX6rUsalY1-p7FmoCevvVN3mDC5_X_ui-fgHOBDZ1zpDoC8QvZyYBGndgPkUkbgVS4VIz6A2_qgtiN43eDSKDkUd34q1Osn-t8L4mFmzgecCXXPC7H_TorcpW6EhWASLJdTrxrgW_cESLGKsvD3UoEboQ9KoR9zYnLVPKQHs3ta", runs: "10 runs" },
     ],
     list: Array.from({ length: 25 }, (_, i) => ({
+      id: `${i + 10}`,
       rank: i + 4,
       name: `User ${i + 4}`,
       runs: `${Math.floor(Math.random() * 10) + 1} runs this week`,
@@ -22,11 +23,12 @@ const RUNNER_DATA = {
   },
   UZBEKISTAN: {
     top: [
-      { rank: 2, name: "Jasur A.", km: "545.8 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCt-BGP2rIQNAhh8uZ9yNq4vHhWli5RJKLOkz6LaIQWNZfzKMJahNuSm5U5KSUI5gs8krWAR07yJHfF-hswf3xEM1k9hmJqB76kYphN9DXxoS4ba4w8MTeV8IoEz7yMkNiTLknf6wwHZswe0seYYuLofz4kdoj2DFY54wlQ-m5YzQFduxgzTrRPE7feznTa3OC0YkZCcAjYQNs6qvwmHV2sNF-cgrL0BHOtkM-yY9XDyvQz5Uv_UwRt-WnaDNJt90sj-DPDNIsOlAH3", runs: "45 runs" },
-      { rank: 1, name: "Malika O.", km: "652.4 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCF9N0P0vpMfYJ8ntdqwUDPHkIBJSUqaF5hpZtPAnF5yBV9SDReDamTub-SccnAFRgZ90nwuZzKUzoDkdfsykvgpSmnoOTOA0u4Xz7XeH7sVVOl0Kh1nTGomH7la-FbShK1jc8-ZuIe0PqcGeXugfPuCqoMVpfCFX9Q_pmXt0Xj3v4K9dEn48XBh8V3YBP-REpa8ZdIaaQZ18pN9hzWtuxN6K5-iYuy0zhsLYEy8FQU5dTZ5YzxHRu9nQAC9dNzbNP0L0tQiWO68kBG", runs: "52 runs" },
-      { rank: 3, name: "Sardor B.", km: "438.2 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuD3YCm7s1IYFS64FaIKzZdALWBTb-i1skE6f9gp_7X1wXIiAOp8iZ_VXnC3Ov7c1QQKKSz6irfco-ZPfL3j3GHo3ChWBeV0ggEWdeW5Kof9z9nNLKNaQZsMouXNWW3T-gvTvUnCn2klQM-_wMyNXgJbiB0f0pidtZ-MIE5AYFrvALQDlD1ETV-KEB_w2c00GK4Vf7LO5GA6YOwodYzieYMtyGm_-6TV8Ikjt5tY2WhEmJI7NZrhFlsZuvjOwRMUrULPmjLQlqtbP65M", runs: "38 runs" },
+      { id: "6", rank: 2, name: "Jasur A.", km: "545.8 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCt-BGP2rIQNAhh8uZ9yNq4vHhWli5RJKLOkz6LaIQWNZfzKMJahNuSm5U5KSUI5gs8krWAR07yJHfF-hswf3xEM1k9hmJqB76kYphN9DXxoS4ba4w8MTeV8IoEz7yMkNiTLknf6wwHZswe0seYYuLofz4kdoj2DFY54wlQ-m5YzQFduxgzTrRPE7feznTa3OC0YkZCcAjYQNs6qvwmHV2sNF-cgrL0BHOtkM-yY9XDyvQz5Uv_UwRt-WnaDNJt90sj-DPDNIsOlAH3", runs: "45 runs" },
+      { id: "7", rank: 1, name: "Malika O.", km: "652.4 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCF9N0P0vpMfYJ8ntdqwUDPHkIBJSUqaF5hpZtPAnF5yBV9SDReDamTub-SccnAFRgZ90nwuZzKUzoDkdfsykvgpSmnoOTOA0u4Xz7XeH7sVVOl0Kh1nTGomH7la-FbShK1jc8-ZuIe0PqcGeXugfPuCqoMVpfCFX9Q_pmXt0Xj3v4K9dEn48XBh8V3YBP-REpa8ZdIaaQZ18pN9hzWtuxN6K5-iYuy0zhsLYEy8FQU5dTZ5YzxHRu9nQAC9dNzbNP0L0tQiWO68kBG", runs: "52 runs" },
+      { id: "8", rank: 3, name: "Sardor B.", km: "438.2 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuD3YCm7s1IYFS64FaIKzZdALWBTb-i1skE6f9gp_7X1wXIiAOp8iZ_VXnC3Ov7c1QQKKSz6irfco-ZPfL3j3GHo3ChWBeV0ggEWdeW5Kof9z9nNLKNaQZsMouXNWW3T-gvTvUnCn2klQM-_wMyNXgJbiB0f0pidtZ-MIE5AYFrvALQDlD1ETV-KEB_w2c00GK4Vf7LO5GA6YOwodYzieYMtyGm_-6TV8Ikjt5tY2WhEmJI7NZrhFlsZuvjOwRMUrULPmjLQlqtbP65M", runs: "38 runs" },
     ],
     list: Array.from({ length: 25 }, (_, i) => ({
+      id: `${i + 40}`,
       rank: i + 4,
       name: `User ${i + 4}`,
       runs: `${Math.floor(Math.random() * 30) + 5} runs this month`,
@@ -36,11 +38,12 @@ const RUNNER_DATA = {
   },
   TASHKENT: {
     top: [
-      { rank: 2, name: "Dildora K.", km: "2145.8 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBPheYBTH-qhPFK8JeHgulLJj99E0lGv-eSqj9oHo0vAfzotqjdEi84jl0JxtwAQYCirCBsTQmS0n-f5kaXs8-Z4AVt9ZiBQVdGHqLZDAyglH2dM9GCIsICR5tnIDeiHVb_hRQUfdyuj9-vGOkpjJz2xsjFX_Erm6JTJa4MCCM2DYrDzT1YXqzLMj0wXIrEbyX_8kUGoC86W5m6WPdbzDVkYIGHNkK0nms-AO0XhRt4LxDoHeHwLR70RpbaHB5E69kG9WXDkHjYf9g_", runs: "145 runs" },
-      { rank: 1, name: "Olimjon", km: "2552.4 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuC1McbeGl_zKRyvbTBhaRogz_HUGkJNaBnn7Vg1nOrAJCNJMC9dfXG6LaQTRIZ0PS03twJTc9zJKvWoRmn2FKZwV17-3TXe853ntB1G_-ZjLEU20lEvtmhpiw8tVolbaZOyvRiECaTnqw5QQ-CzLbNPKNGn1WvhsNR4Ikr415BjmEJTfogoJfAa3r4f47A_T62pswlqed8InLJ_lb6wlyl8Hn9HAnaCjmKs-cuTgQ28QfrN1FIFfWuGu0IIOhZ5PvUfHSmzC4Fpx9Ss", runs: "155 runs" },
-      { rank: 3, name: "Jasur A.", km: "1938.2 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCt-BGP2rIQNAhh8uZ9yNq4vHhWli5RJKLOkz6LaIQWNZfzKMJahNuSm5U5KSUI5gs8krWAR07yJHfF-hswf3xEM1k9hmJqB76kYphN9DXxoS4ba4w8MTeV8IoEz7yMkNiTLknf6wwHZswe0seYYuLofz4kdoj2DFY54wlQ-m5YzQFduxgzTrRPE7feznTa3OC0YkZCcAjYQNs6qvwmHV2sNF-cgrL0BHOtkM-yY9XDyvQz5Uv_UwRt-WnaDNJt90sj-DPDNIsOlAH3", runs: "130 runs" },
+      { id: "9", rank: 2, name: "Dildora K.", km: "2145.8 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBPheYBTH-qhPFK8JeHgulLJj99E0lGv-eSqj9oHo0vAfzotqjdEi84jl0JxtwAQYCirCBsTQmS0n-f5kaXs8-Z4AVt9ZiBQVdGHqLZDAyglH2dM9GCIsICR5tnIDeiHVb_hRQUfdyuj9-vGOkpjJz2xsjFX_Erm6JTJa4MCCM2DYrDzT1YXqzLMj0wXIrEbyX_8kUGoC86W5m6WPdbzDVkYIGHNkK0nms-AO0XhRt4LxDoHeHwLR70RpbaHB5E69kG9WXDkHjYf9g_", runs: "145 runs" },
+      { id: "1", rank: 1, name: "Olimjon", km: "2552.4 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuC1McbeGl_zKRyvbTBhaRogz_HUGkJNaBnn7Vg1nOrAJCNJMC9dfXG6LaQTRIZ0PS03twJTc9zJKvWoRmn2FKZwV17-3TXe853ntB1G_-ZjLEU20lEvtmhpiw8tVolbaZOyvRiECaTnqw5QQ-CzLbNPKNGn1WvhsNR4Ikr415BjmEJTfogoJfAa3r4f47A_T62pswlqed8InLJ_lb6wlyl8Hn9HAnaCjmKs-cuTgQ28QfrN1FIFfWuGu0IIOhZ5PvUfHSmzC4Fpx9Ss", runs: "155 runs" },
+      { id: "6", rank: 3, name: "Jasur A.", km: "1938.2 KM", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCt-BGP2rIQNAhh8uZ9yNq4vHhWli5RJKLOkz6LaIQWNZfzKMJahNuSm5U5KSUI5gs8krWAR07yJHfF-hswf3xEM1k9hmJqB76kYphN9DXxoS4ba4w8MTeV8IoEz7yMkNiTLknf6wwHZswe0seYYuLofz4kdoj2DFY54wlQ-m5YzQFduxgzTrRPE7feznTa3OC0YkZCcAjYQNs6qvwmHV2sNF-cgrL0BHOtkM-yY9XDyvQz5Uv_UwRt-WnaDNJt90sj-DPDNIsOlAH3", runs: "130 runs" },
     ],
     list: Array.from({ length: 25 }, (_, i) => ({
+      id: `${i + 70}`,
       rank: i + 4,
       name: `User ${i + 4}`,
       runs: `${Math.floor(Math.random() * 200) + 50} runs total`,
@@ -52,10 +55,19 @@ const RUNNER_DATA = {
 
 export default function Leaderboard() {
   const [activeTab, setActiveTab] = useState<keyof typeof RUNNER_DATA>("GLOBAL");
+  const [metricTab, setMetricTab] = useState<"MASOFA" | "HUDUD" | "QADAM">("MASOFA");
   const [isLoading, setIsLoading] = useState(false);
   const [isStickyVisible, setIsStickyVisible] = useState(true);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const targetRef = useRef<HTMLDivElement>(null);
+
+  const getMetricValue = (kmStr: string, type: "MASOFA" | "HUDUD" | "QADAM") => {
+    const num = parseFloat(kmStr);
+    if (type === "MASOFA") return { value: num.toFixed(1), label: "KM" };
+    if (type === "HUDUD") return { value: Math.floor(num / 15).toString(), label: "HUDUD" };
+    if (type === "QADAM") return { value: Math.floor(num * 1312).toLocaleString(), label: "QADAM" };
+    return { value: "0", label: "" };
+  };
 
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const scrollAccumulator = useRef(0);
@@ -159,6 +171,32 @@ export default function Leaderboard() {
             </button>
           ))}
         </div>
+        
+        {/* Metric Tabs */}
+        <div className="flex px-4 py-3 bg-surface/80 border-t border-white/5">
+          <div className="flex w-full bg-black/40 rounded-xl p-1 border border-white/5 relative">
+            {(["MASOFA", "HUDUD", "QADAM"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setMetricTab(tab)}
+                className={`relative z-10 flex-1 py-2 text-[10px] rounded-lg font-bold font-mono tracking-widest uppercase transition-colors duration-300 ${
+                  metricTab === tab 
+                    ? "text-black" 
+                    : "text-white/40 hover:text-white/70"
+                }`}
+              >
+                {tab === "HUDUD" ? "HUDUDLAR" : tab === "QADAM" ? "QADAMLAR" : "MASOFA"}
+                {metricTab === tab && (
+                  <motion.div
+                    layoutId="activeMetricTab"
+                    className="absolute inset-0 bg-primary rounded-lg -z-10 shadow-[0_0_10px_rgba(204,255,0,0.2)]"
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </header>
 
       {/* Scrollable Content Area */}
@@ -196,7 +234,9 @@ export default function Leaderboard() {
                   </div>
                 </div>
                 <p className="text-[10px] italic-black truncate w-full text-center text-white uppercase tracking-tight">{runner.name}</p>
-                <p className="text-[11px] text-primary font-mono font-bold tracking-tighter">{runner.km}</p>
+                <p className="text-[11px] text-primary font-mono font-bold tracking-tighter">
+                  {getMetricValue(runner.km, metricTab).value} {getMetricValue(runner.km, metricTab).label}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -226,8 +266,8 @@ export default function Leaderboard() {
                 <p className="text-[9px] text-white/30 font-mono uppercase tracking-widest">{runner.runs}</p>
               </div>
               <div className="text-right">
-                <p className="italic-black text-lg text-primary leading-none">{runner.km}</p>
-                <p className="text-[9px] text-white/30 font-mono uppercase tracking-widest">KM</p>
+                <p className="italic-black text-lg text-primary leading-none">{getMetricValue(runner.km, metricTab).value}</p>
+                <p className="text-[9px] text-white/30 font-mono uppercase tracking-widest">{getMetricValue(runner.km, metricTab).label}</p>
               </div>
             </motion.div>
           ))}
@@ -254,8 +294,8 @@ export default function Leaderboard() {
               <p className="text-[9px] text-black/60 font-mono font-bold uppercase tracking-widest">Top 15% this week</p>
             </div>
             <div className="text-right">
-              <p className="italic-black text-black text-2xl leading-none">84.2</p>
-              <p className="text-[9px] text-black/60 font-mono uppercase tracking-widest">KM</p>
+              <p className="italic-black text-black text-2xl leading-none">{getMetricValue("84.2", metricTab).value}</p>
+              <p className="text-[9px] text-black/60 font-mono uppercase tracking-widest">{getMetricValue("84.2", metricTab).label}</p>
             </div>
           </div>
         </div>

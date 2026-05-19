@@ -4,11 +4,16 @@ import Login from "./screens/Login";
 import Register from "./screens/Register";
 import Feed from "./screens/Feed";
 import Profile from "./screens/Profile";
+import UserProfile from "./screens/UserProfile";
 import Leaderboard from "./screens/Leaderboard";
 import MapRun from "./screens/MapRun";
 import ActiveRun from "./screens/ActiveRun";
 import Clan from "./screens/Clan";
 import MarketComingSoon from "./screens/MarketComingSoon";
+import PlanDetail from "./screens/PlanDetail";
+import EventDetail from "./screens/EventDetail";
+import NewsDetail from "./screens/NewsDetail";
+import WatchPromo from "./screens/WatchPromo";
 
 function StatsPlaceholder() {
   return (
@@ -35,12 +40,17 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/user/:userId" element={<UserProfile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/map" element={<MapRun />} />
             <Route path="/active-run" element={<ActiveRun />} />
             <Route path="/stats" element={<StatsPlaceholder />} />
             <Route path="/clan" element={<Clan />} />
             <Route path="/market" element={<MarketComingSoon />} />
+            <Route path="/plan/:id" element={<PlanDetail />} />
+            <Route path="/event/:id" element={<EventDetail />} />
+            <Route path="/news/:id" element={<NewsDetail />} />
+            <Route path="/store/watch" element={<WatchPromo />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
         </Router>

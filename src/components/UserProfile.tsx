@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from "motion/react";
-import { X, MessageCircle, UserPlus, Trophy, Users, MapPin, Activity, Zap, Award, BarChart2, ChevronRight } from "lucide-react";
+import { X, MessageCircle, UserPlus, Trophy, Users, MapPin, Activity, Zap, Award, BarChart2, ChevronRight, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface UserProfileProps {
   isOpen: boolean;
   onClose: () => void;
   user: {
+    id?: string;
     name: string;
     avatar: string;
     km: string;
@@ -14,13 +16,12 @@ interface UserProfileProps {
   };
 }
 
-// Mock data for new features
+// Mock data for user details
 const MOCK_ACTIVITIES = [
   { date: "27-Mar", km: "5.2 KM", time: "28 daqiqa" },
   { date: "25-Mar", km: "8.1 KM", time: "45 daqiqa" },
   { date: "23-Mar", km: "4.0 KM", time: "22 daqiqa" },
 ];
-
 
 const ACHIEVEMENTS = [
   { title: "HUDUD EGALLASH", prefix: "hudud", total: 10, active: 2 },
@@ -30,6 +31,13 @@ const ACHIEVEMENTS = [
 ];
 
 export default function UserProfile({ isOpen, onClose, user }: UserProfileProps) {
+  const navigate = useNavigate();
+
+  const handleOpenFullProfile = () => {
+    onClose();
+    navigate(`/user/${user.id || '1'}`);
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -60,6 +68,14 @@ export default function UserProfile({ isOpen, onClose, user }: UserProfileProps)
               <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/20 rounded-full text-white/70">
                 <X className="w-5 h-5" />
               </button>
+              
+              <button 
+                onClick={handleOpenFullProfile}
+                className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-primary rounded-full text-black text-[10px] font-black uppercase tracking-tighter"
+              >
+                To'liq Profil <ExternalLink className="w-3 h-3" />
+              </button>
+
               <div className="absolute -bottom-10 left-6">
                 <div className="h-24 w-24 rounded-full border-4 border-surface p-1 bg-surface">
                   <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />

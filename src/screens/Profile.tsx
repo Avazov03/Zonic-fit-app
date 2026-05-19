@@ -14,7 +14,7 @@ import {
   Smartphone, Watch, Languages, EyeOff, UserCheck, Link2, Link2Off,
   User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Quote,
   Battery, Bluetooth, AlertTriangle, Volume1, Volume, RefreshCw,
-  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight
+  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight, GraduationCap, Apple
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/src/lib/utils";
@@ -699,6 +699,7 @@ const cleanForTTS = (text: string) => {
     .replace(/g['ʻʼ]/g, "g")
     .replace(/ç/g, "ch")
     .replace(/ş/g, "sh")
+    .replace(/\[CHART:[^\]]*\]/gi, "") // Remove chart markers
     .replace(/[*_#\[\]]/g, "") // Remove common markdown
     .replace(/[^\w\s\u0400-\u04FF'ʻʼ.,?!-«»]/gi, '') // Keep basic chars including Uzbek Cyrillic
     .replace(/\s+/g, ' ')
@@ -813,7 +814,7 @@ const AIChatModal = ({
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-white text-sm font-black uppercase tracking-widest leading-none">AI Murabbiy</h2>
+                <h2 className="text-white text-sm font-black uppercase tracking-widest leading-none">Mahbuba</h2>
                 <div className="flex items-center gap-1 mt-1">
                    <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
                    <p className="text-[8px] font-black uppercase tracking-widest text-primary/60">OpenAI & Gemini Powered</p>
@@ -870,11 +871,37 @@ const AIChatModal = ({
                     ? "bg-[#FF005C] text-white rounded-tr-none shadow-[0_5px_15px_rgba(255,0,92,0.2)]" 
                     : "bg-white/5 text-white/80 border border-white/10 rounded-tl-none"
                 )}>
-                  {msg.text}
+                  <div>
+                    <p>{msg.text.replace(/\[CHART:[^\]]*\]/gi, '').trim()}</p>
+                    {msg.text.includes("[CHART:distance]") && (
+                      <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
+                        <TacticalSparkline data={STATS_CARDS[0].chartData} color={STATS_CARDS[0].color} />
+                        <p className="text-[8px] font-black uppercase text-center mt-2 text-primary/60 tracking-widest">Masofa Dinamikasi (km)</p>
+                      </div>
+                    )}
+                    {msg.text.includes("[CHART:pace]") && (
+                       <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
+                         <TacticalSparkline data={STATS_CARDS[1].chartData} color={STATS_CARDS[1].color} />
+                         <p className="text-[8px] font-black uppercase text-center mt-2 text-[#00F0FF]/60 tracking-widest">Temp Ko'rsatkichlari (min/km)</p>
+                       </div>
+                    )}
+                    {msg.text.includes("[CHART:heart]") && (
+                       <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
+                         <TacticalSparkline data={STATS_CARDS[2].chartData} color={STATS_CARDS[2].color} />
+                         <p className="text-[8px] font-black uppercase text-center mt-2 text-[#FF005C]/60 tracking-widest">Yurak Urish Ritmi (BPM)</p>
+                       </div>
+                    )}
+                    {(msg.text.includes("[CHART:area]") || msg.text.includes("[CHART:hudud]")) && (
+                       <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
+                         <TacticalSparkline data={[{value: 5.2}, {value: 8.4}, {value: 12.1}, {value: 10.5}, {value: 14.8}, {value: 13.9}, {value: 15.2}]} color="#00F0FF" /> 
+                         <p className="text-[8px] font-black uppercase text-center mt-2 text-[#00F0FF]/60 tracking-widest">Hudud Egallash Dinamikasi (km²)</p>
+                       </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2 px-1">
                   <span className="text-[7px] font-black uppercase text-white/20">
-                    {msg.role === 'user' ? "Siz" : "Murabbiy"}
+                    {msg.role === 'user' ? "Siz" : "Mahbuba"}
                   </span>
                   {msg.role === 'model' && (
                     <button 
@@ -2199,7 +2226,21 @@ const ClanChatModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                     {msg.image && (
                       <img src={msg.image} alt="Sent" className="w-full rounded-xl mb-2 object-cover max-h-60" referrerPolicy="no-referrer" />
                     )}
-                    {msg.text}
+                    {msg.text.includes("[CHART:distance]") ? (
+                      <div className="mt-2 h-24 w-full">
+                        <TacticalSparkline data={STATS_CARDS[0].chartData} color={STATS_CARDS[0].color} />
+                      </div>
+                    ) : msg.text.includes("[CHART:pace]") ? (
+                      <div className="mt-2 h-24 w-full">
+                        <TacticalSparkline data={STATS_CARDS[1].chartData} color={STATS_CARDS[1].color} />
+                      </div>
+                    ) : msg.text.includes("[CHART:heart]") ? (
+                      <div className="mt-2 h-24 w-full">
+                        <TacticalSparkline data={STATS_CARDS[2].chartData} color={STATS_CARDS[2].color} />
+                      </div>
+                    ) : (
+                      msg.text
+                    )}
                   </div>
                   <span className="text-[8px] font-bold text-white/20 uppercase tracking-widest mt-1.5">{msg.time}</span>
                 </div>
@@ -4091,7 +4132,7 @@ const SwipeableHistoryCards = ({ activities }: { activities: any[] }) => {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("Umumiy");
+  const [activeTab, setActiveTab] = useState("Asosiy");
   const [uzVoice, setUzVoice] = useState<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
@@ -4166,7 +4207,7 @@ export default function Profile() {
   const [isHandsFree, setIsHandsFree] = useState(false);
   const [isAIVoiceAssistantActive, setIsAIVoiceAssistantActive] = useState(false);
   const [isAIVoiceSetupOpen, setIsAIVoiceSetupOpen] = useState(false);
-  const [useCloudSTT, setUseCloudSTT] = useState(true);
+  const [useCloudSTT, setUseCloudSTT] = useState(true); // Switch back to Cloud STT for much higher accuracy in Uzbek
   const [assistantState, setAssistantState] = useState<'idle' | 'listening_wake' | 'listening_cmd' | 'thinking' | 'speaking'>('idle');
   const [activeTranscript, setActiveTranscript] = useState("");
   const [voiceAssistantPrefs, setVoiceAssistantPrefs] = useState({
@@ -4177,7 +4218,7 @@ export default function Profile() {
     analysisInterval: 5 // minutes
   });
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'model', text: string}[]>([
-    { role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Bugungi natijalaringiz haqida suhbatlashamizmi?" }
+    { role: 'model', text: "Assalomu alaykum! Men Mahbubaman, sizning shaxsiy AI yordamchingizman. Bugun qanday rejalaringiz bor? Yangi marralarni zabt etishga tayyormisiz? ✨" }
   ]);
   const [voiceMessages, setVoiceMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -4201,7 +4242,12 @@ export default function Profile() {
       const resp = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: "alloy" })
+        body: JSON.stringify({ 
+          text, 
+          voice: "alloy" 
+        }),
+        // Add a long-ish timeout for the fetch itself
+        signal: AbortSignal.timeout(15000)
       });
 
       if (!resp.ok) throw new Error(`TTS failed with status ${resp.status}`);
@@ -4280,8 +4326,8 @@ export default function Profile() {
       const utterance = new SpeechSynthesisUtterance(text);
       if (uzVoice) utterance.voice = uzVoice;
       utterance.lang = 'uz-UZ';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.1; // Slightly higher pitch for more "smooth" feel
+      utterance.rate = 0.95; // Slightly slower for better clarity
+      utterance.pitch = 1.0; 
       
       utterance.onend = () => {
         isPlayingAudio.current = false;
@@ -4365,7 +4411,7 @@ export default function Profile() {
 
     recognition.onstart = () => {
       setAssistantState('listening_wake');
-      console.log("Zonic is listening for wake word...");
+      console.log("Mahbuba is listening for wake word...");
     };
     
     recognition.onresult = (event: any) => {
@@ -4377,6 +4423,7 @@ export default function Profile() {
       console.log("Detecting:", text);
       
       const triggers = [
+        'mahbuba', 'maxbuba', 'maxbubaxon', 'mahbubaxon', 'hey mahbuba', 'salom mahbuba',
         'zonic', 'zonik', 'zonig', 'zomik', 'hey zonic', 'ey zonik', 'hay zonik', 
         'salom zonic', 'hey zoni', 'joni', 'jonik', 'zohid', 'zoning', 'zoney',
         'hey xonic', 'xonic', 'sonik', 'salom murabbiy', 'hey murabbiy', 'ezonic'
@@ -4738,7 +4785,7 @@ export default function Profile() {
     setAssistantState('listening_cmd');
     setActiveTranscript("");
 
-    // Use Whisper for Voice Coach if possible, fallback to Web Speech for Chat
+    // Use Whisper for Voice Coach if specifically enabled, otherwise default to fast Web Speech
     if (isAIVoiceAssistantActive && !isAIChatOpen && useCloudSTT) {
       startWhisperRecording();
       return;
@@ -4839,16 +4886,18 @@ export default function Profile() {
         Response Style: Concise, encouraging, and insightful. Use emojis.
       `;
 
-      const systemInstruction = `SIZ 'ZONIC' ILOVASINING SHAXSIY AI MURABBIYI VA SUDYASISIZ. 
+      const systemInstruction = `SIZ 'ZONIC' ILOVASINING SHAXSIY AI YORDAMCHISI - MAHBUBASIZ. 
           
           FOYDALANUVCHINING HAQIQIY STATISTIKASI (BUGUN ${currentDayUz}, ${currentDateStr}):
           ${statsContext}
 
           MUHIM KO'RSATMA:
-          1. Foydalanuvchi gaplarining MA'NOSINI DANGAL VA TO'G'RI tushunib, SHUNGA MOS JO'YALI, MANTIQIY va aqlli javob qaytaring. Foydalanuvchining ahvolini, gapirayotgan kontekstini chuqur tahlil qiling. Agar jumlasi chala bo'lsa, moslashtirib mantiqan to'ldirib oling.
-          2. Yutuqlarni so'raganda FAQAT bugungacha bo'lgan natijalarni ayting. Kelajakni bashorat qilmang, axborot yo'qligini tushuntiring.
-          3. Diagrammalardagi raqamlarga juda aniq tayaning.
-          4. O'zbek tilida juda samimiy, do'stona va o'rinli (keraksiz o'lchov birliklarini takrorlamasdan) javob bering. Rofqalar va metrlarni takrorlayvermang.
+          1. ISMINGIZ MAHBUBA. Har doim samimiy, latofatli va dalda beruvchi bo'ling.
+          2. DIAGRAMMALAR: Agar foydalanuvchi diagramma yoki statistik grafik so'rasa, javobingiz oxiriga mos keluvchi [CHART:distance], [CHART:pace], [CHART:heart] yoki [CHART:area] kalit so'zlarini qo'shing.
+          3. NUTQ VA MA'NO: Foydalanuvchi gapirayotganda so'zlarni noto'g'ri talaffuz qilsa yoki jumlalar chala bo'lsa ham, mantiqan uning ASL MAQSADINI sezib, shunga mos javob bering. Xatolarni to'g'irlab tushunish sizning kuchli tomoningiz.
+          4. Foydalanuvchining ahvolini, gapirayotgan kontekstini (mashg'ulot payti, charchoq, hursandchilik) chuqur tahlil qiling. 
+          5. Yutuqlarni so'raganda FAQAT bugungacha bo'lgan natijalarni ayting. Kelajakni bashorat qilmang.
+          6. O'zbek tilida juda samimiy, do'stona va professional javob bering.
 
           MULOQOT USLUBI (PHONETIC & SPEECH OPTIMIZED):
           1. Sof, ravon va aqlli o'zbek tilida gapiring. Imlo xatolariga yo'l qo'ymang.
@@ -5466,7 +5515,7 @@ export default function Profile() {
   const handleTestVoice = async (customText?: string, forceVoice?: string) => {
     if (isVoiceTesting) return;
     
-    const text = customText || "Xayrli kun! Men Zonic AI yordamchisiman. Bugun yangi marralarni zabt etishga tayyormisiz?";
+    const text = customText || "Assalomu alaykum! Men Mahbubaman, sizning shaxsiy AI yordamchingizman. Bugun yangi marralarni zabt etishga tayyormisiz? ✨";
     
     setIsVoiceTesting(true);
     speakText(text);
@@ -5495,7 +5544,7 @@ export default function Profile() {
     if (key === 'aiVoiceAssistant') {
       setIsAIVoiceAssistantActive(newValue);
       if (newValue) {
-        const greeting = "Salom! Men OpenAI va Gemini texnologiyalari asosida ishlovchi Zonic murabbiyman. Sizni eshityapman, savolingiz bo'lsa shunchaki so'rang.";
+        const greeting = "Assalomu alaykum! Men OpenAI va Gemini texnologiyalari asosida ishlovchi Mahbubaman. Sizni eshityapman, savolingiz bo'lsa shunchaki so'rang.";
         speakText(greeting);
         // Follow-up listening is now handled by the playNextInQueue auto-listening logic
       } else {
@@ -6649,7 +6698,7 @@ export default function Profile() {
 
       {/* Tabs */}
       <div className="flex px-6 border-b border-white/5 bg-surface/20 backdrop-blur-md overflow-x-auto no-scrollbar">
-        {["Umumiy", "Yutuqlar", "Maqsadlar", "Faoliyat"].map((tab) => (
+        {["Umumiy", "Asosiy", "Maqsadlar", "Faoliyat"].map((tab) => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -6675,6 +6724,184 @@ export default function Profile() {
         onScroll={handleScroll}
       >
         <AnimatePresence mode="wait">
+          {activeTab === "Asosiy" && (
+            <motion.div
+              key="asosiy"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+              className="px-6 pt-6 space-y-8 pb-20"
+            >
+              {/* Training Plan Section */}
+              <section data-purpose="featured-plan">
+                <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-6 px-6 pb-4 snap-x snap-mandatory">
+                  {[
+                    { img: "1517836357463-d25dfeac3438", tag: "REJA", title: "Boshlovchilar uchun to'liq tana mashqi" },
+                    { img: "1538805060514-97d9cc17730c", tag: "YANGI", title: "Ertalabki yugurish va nafas olish..." },
+                    { img: "1584735935682-2f2b69dff9d2", tag: "KARDIO", title: "15 daqiqalik intensiv kardio mashqlari" },
+                    { img: "1571019614242-c5c5dee9f50b", tag: "KUCH", title: "Qo'l va yelka mushaklarini o'stirish" },
+                    { img: "1518611012118-696072aa579a", tag: "MARAFON", title: "Marafonga tayyorgarlik kursi, loyiha" }
+                  ].map((plan, idx) => (
+                    <div key={idx} className="relative flex-shrink-0 w-[calc(100%-4px)] sm:w-[320px] snap-center h-[160px] rounded-[24px] overflow-hidden shadow-lg border border-white/10 group">
+                      <img alt={plan.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src={`https://images.unsplash.com/photo-${plan.img}?w=800&q=80`}/>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/90 via-[#0a0a0a]/50 to-transparent flex flex-col justify-between p-4">
+                        <div>
+                          <span className="inline-block px-2 py-1 bg-white/10 backdrop-blur-md text-[#ccff00] text-[10px] font-bold rounded-md tracking-[0.2em] uppercase">{plan.tag}</span>
+                          <h2 className="mt-2 text-white text-[17px] sm:text-[19px] font-bold leading-tight max-w-[200px]">
+                            {plan.title}
+                          </h2>
+                        </div>
+                        <button 
+                          onClick={() => navigate(`/plan/${idx}`)}
+                          className="w-fit px-4 py-2 bg-[#ccff00] text-black font-semibold rounded-xl flex items-center shadow-sm hover:bg-white transition-colors text-sm"
+                        >
+                          Davom etish
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Promo Banner */}
+              <section data-purpose="advertisement">
+                <div 
+                  onClick={() => navigate("/store/watch")}
+                  className="bg-[#121212] rounded-2xl p-4 flex items-center gap-4 border border-white/5 overflow-hidden relative min-h-[90px] shadow-sm cursor-pointer active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-white/10 relative">
+                    <img alt="Smart Watch" className="w-full h-full object-cover opacity-90" src="https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=300&q=80"/>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div className="w-1.5 h-1.5 bg-[#ccff00] rounded-full"></div>
+                      <span className="text-[10px] font-bold tracking-widest text-[#ccff00]/80 uppercase">zonic</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white leading-tight">
+                      <span className="bg-[#ccff00] text-black px-1.5 py-0.5 rounded-sm">O'zgarishga</span> tayyormisiz?
+                    </h3>
+                    <p className="text-[11px] text-white/50 mt-1.5 font-medium">
+                      Hoziroq <span className="bg-[#ccff00] text-black px-1 rounded-sm">oldindan buyurtma</span> bering!
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Quick Start Section */}
+              <section data-purpose="quick-start-activities">
+                <h3 className="text-2xl font-bold mb-4 text-white tracking-tight">Tez boshlash</h3>
+                <div className="flex space-x-4 overflow-x-auto no-scrollbar pb-2">
+                  <div className="flex-shrink-0 w-[105px] h-[105px] min-h-[105px] bg-[#ccff00]/10 border border-[#ccff00]/20 rounded-[20px] flex flex-col items-center justify-center p-3">
+                    <div className="w-10 h-10 bg-[#ccff00]/20 rounded-full flex items-center justify-center mb-2">
+                      <Activity className="text-[#ccff00] w-5 h-5"/>
+                    </div>
+                    <span className="font-semibold text-[15px] text-white tracking-wide">Yugurish</span>
+                  </div>
+                  <div className="flex-shrink-0 w-[105px] h-[105px] min-h-[105px] bg-white/[0.03] border border-white/5 rounded-[20px] flex flex-col items-center justify-center p-3">
+                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center mb-2">
+                      <Footprints className="text-white w-5 h-5"/>
+                    </div>
+                    <span className="font-semibold text-[15px] text-white tracking-wide">Yurish</span>
+                  </div>
+                  <div className="flex-shrink-0 w-[105px] h-[105px] min-h-[105px] bg-white/[0.03] border border-white/5 rounded-[20px] flex flex-col items-center justify-center p-3">
+                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center mb-2">
+                      <Bike className="text-white w-5 h-5"/>
+                    </div>
+                    <span className="font-semibold text-[15px] text-white tracking-wide">Velosiped</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Events Section */}
+              <section data-purpose="events-list" className="mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Tadbirlar</h3>
+                  <button className="font-medium text-[#ccff00]">Barchasi</button>
+                </div>
+                
+                <div className="flex space-x-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 snap-x snap-mandatory">
+                  {[
+                    "1552674605-db6ffd4facb5",
+                    "1538805060514-97d9cc17730c",
+                    "1518611012118-696072aa579a",
+                    "1544367567056-b80c5ce60c5a",
+                    "1452626038306-6a536b000210"
+                  ].map((imgId, index) => {
+                    const item = index + 1;
+                    return (
+                    <div 
+                      key={item} 
+                      onClick={() => navigate(`/event/${item}`)}
+                      className="flex-shrink-0 w-[calc(100%-4px)] sm:w-[320px] bg-[#121212] rounded-[20px] overflow-hidden shadow-sm border border-white/10 snap-center cursor-pointer active:scale-[0.98] transition-transform"
+                    >
+                      <div className="relative w-full h-[120px] border-b border-white/5">
+                        <img alt="Event Challenge" className="w-full h-full object-cover" src={`https://images.unsplash.com/photo-${imgId}?auto=format&fit=crop&w=800&q=80`} />
+                        <div className="absolute top-3 right-3 flex items-center space-x-2 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                          <span className="text-[#ccff00] text-[11px] font-bold tracking-widest uppercase">zonic</span>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="text-[16px] font-bold mb-3 text-white leading-tight line-clamp-1">Run & Walk Challenge: Markaziy Osiyo {item}</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center text-white/50">
+                            <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center mr-2.5 shrink-0">
+                              <Calendar className="w-3.5 h-3.5 text-white/80" />
+                            </div>
+                            <span className="text-[13px] font-medium text-white/90">01.05.2026 - 21.05.2026</span>
+                          </div>
+                          <div className="flex items-center text-white/50">
+                            <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center mr-2.5 shrink-0">
+                              <MapPin className="w-3.5 h-3.5 text-white/80" />
+                            </div>
+                            <span className="text-[13px] font-medium text-white/90">Markaziy Osiyo</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )})}
+                </div>
+              </section>
+              
+              {/* News Section */}
+              <section data-purpose="news-section" className="pb-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Yangiliklar</h3>
+                  <button className="text-[#ccff00] font-medium">Barchasi</button>
+                </div>
+                <div className="flex space-x-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6 snap-x snap-mandatory">
+                  {[
+                    { img: "1571019614242-c5c5dee9f50b", icon: GraduationCap, iconColor: "text-[#ccff00]", title: "Yangi o'quv kursi", desc: "Professional murabbiylarimizdan yangi trening dasturlari." },
+                    { img: "1490645935967-10de6ba17061", icon: Apple, iconColor: "text-white", title: "Sog'lom ovqatlanish", desc: "To'g'ri ovqatlanish bo'yicha mutaxassis maslahatlari." },
+                    { img: "1540497077202-7c8a3999166f", icon: Dumbbell, iconColor: "text-white", title: "Yangi jihozlar", desc: "Zalimizga eng zamonaviy trenajyorlar keldi." }
+                  ].map((news, idx) => {
+                    const item = idx + 1;
+                    const Icon = news.icon;
+                    return (
+                      <div 
+                        key={item} 
+                        onClick={() => navigate(`/news/${item}`)}
+                        className="flex-shrink-0 w-[calc(100%-4px)] sm:w-[320px] bg-[#121212] rounded-[20px] shadow-sm border border-white/10 overflow-hidden snap-center group cursor-pointer active:scale-[0.98] transition-transform"
+                      >
+                        <div className="h-28 border-b border-white/5 relative overflow-hidden">
+                          <img src={`https://images.unsplash.com/photo-${news.img}?auto=format&fit=crop&w=400&q=80`} alt={news.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#121212] to-transparent opacity-80" />
+                          <div className="absolute inset-0 flex flex-col justify-end p-3">
+                            <Icon className={`${news.iconColor} w-5 h-5 drop-shadow-md`} />
+                          </div>
+                        </div>
+                        <div className="p-4 pt-2.5">
+                          <h4 className="text-[16px] font-bold text-white mb-0.5">{news.title}</h4>
+                          <p className="text-[13px] text-white/50 line-clamp-2">{news.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </motion.div>
+          )}
+
           {activeTab === "Umumiy" && (
             <motion.div
               key="umumiy"
@@ -7522,19 +7749,9 @@ export default function Profile() {
             <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
           </div>
         </section>
-            </motion.div>
-          )}
 
-          {activeTab === "Yutuqlar" && (
-            <motion.div
-              key="yutuqlar"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
               {/* Achievements Section */}
-              <section className="px-6 pt-6">
+              <section className="px-6 pt-6 pb-6 mt-4 border-t border-white/5">
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-sm font-black uppercase tracking-[0.3em] text-white/40 px-2">Yutuqlar</h2>
                   <button 
@@ -8026,7 +8243,7 @@ export default function Profile() {
         messages={chatMessages}
         onSendMessage={sendAIChatMessage}
         isTyping={isTyping}
-        onClearHistory={() => setChatMessages([{ role: 'model', text: "Salom! Men sizning shaxsiy AI murabbiyingizman. Chat tarixi tozalandi. Qanday yordam bera olaman?" }])}
+        onClearHistory={() => setChatMessages([{ role: 'model', text: "Assalomu alaykum! Men Mahbubaman, sizning shaxsiy AI yordamchingizman. Chat tarixi tozalandi. Qanday yordam bera olaman?" }])}
         isHandsFree={isHandsFree}
         setIsHandsFree={setIsHandsFree}
         uzVoice={uzVoice}
