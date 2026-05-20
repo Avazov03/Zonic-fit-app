@@ -205,7 +205,9 @@ Taqdim etiladigan diagrammalar (Xabarning eng oxirida bittasidan foydalaning):
 - [CHART:distance] - Masofa dinamikasi (Haftalik)
 - [CHART:pace] - Temp dinamikasi (Haftalik)
 - [CHART:heart] - Yurak urish ritmi (BPM)
-- [CHART:hudud] - Hudud egallash dinamikasi (KM2)
+- [CHART:hudud] - Hudud egallash dinamikasi (Haftalik)
+- [CHART:hudud_oy] - Hudud egallash dinamikasi (Oylik)
+- [CHART:hudud_yil] - Hudud egallash dinamikasi (Yillik)
 
 Agar jadval haqida gapirsangiz, albatta tegishli [CHART:...] tegini yuboring.`;
 

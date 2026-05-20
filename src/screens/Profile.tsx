@@ -978,7 +978,29 @@ const AIChatModal = ({
                          </div>
                        </div>
                     )}
-                    {(msg.text.includes("[CHART:area]") || msg.text.includes("[CHART:hudud]")) && (
+                    {(() => {
+                      const text = msg.text.toLowerCase();
+                      const isHudud = text.includes("[chart:area]") || text.includes("[chart:hudud]") || text.includes("[chart:hudud_oy]") || text.includes("[chart:hudud_yil]");
+                      if (!isHudud) return null;
+                      
+                      let mode: "hafta" | "oy" | "yil" = "hafta";
+                      let btnText = "HAFTA";
+                      let hududData = [30, 45, 60, 55, 85, 95, 40];
+                      let globeData = [{label: "Du", value: 30}, {label: "Se", value: 45}, {label: "Ch", value: 60}, {label: "Pa", value: 55}, {label: "Ju", value: 85}, {label: "Sh", value: 95}, {label: "Ya", value: 40}];
+                      
+                      if (text.includes("[chart:hudud_oy]")) {
+                         mode = "oy";
+                         btnText = "OY";
+                         hududData = [50, 75, 45, 90, 60];
+                         globeData = [{label: "1-hafta", value: 50}, {label: "2-hafta", value: 75}, {label: "3-hafta", value: 45}, {label: "4-hafta", value: 90}, {label: "5-hafta", value: 60}];
+                      } else if (text.includes("[chart:hudud_yil]")) {
+                         mode = "yil";
+                         btnText = "YIL";
+                         hududData = [30, 45, 60, 50, 80, 95, 40, 55, 75, 85, 60, 90];
+                         globeData = [{label: "Jan", value: 30}, {label: "Feb", value: 45}, {label: "Mar", value: 60}, {label: "Apr", value: 50}, {label: "May", value: 80}, {label: "Jun", value: 95}, {label: "Jul", value: 40}, {label: "Aug", value: 55}, {label: "Sep", value: 75}, {label: "Oct", value: 85}, {label: "Nov", value: 60}, {label: "Dec", value: 90}];
+                      }
+                      
+                      return (
                        <div className="mt-4 bg-[#0B0C10] border border-white/5 rounded-3xl overflow-hidden group">
                          <div className="p-5 pb-0">
                            <div className="flex justify-between items-start mb-6">
@@ -991,26 +1013,27 @@ const AIChatModal = ({
                                </div>
                                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10">
                                  <button className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all bg-[#CCFF00] text-black shadow-[0_0_10px_rgba(204,255,0,0.5)]">
-                                   HAFTA
+                                   {btnText}
                                  </button>
                                </div>
                            </div>
                          </div>
                          
-                         <div className="relative w-full h-[220px] overflow-hidden flex justify-center mt-2">
-                           <div className="relative w-[340px] h-64 shrink-0 scale-[0.72] min-[380px]:scale-[0.8] origin-top">
-                             <div className="absolute inset-0 transform -translate-y-[75px] w-full h-full">
+                         <div className="relative w-full h-[180px] min-[380px]:h-[210px] overflow-hidden flex justify-center mt-2">
+                           <div className="relative w-[340px] h-64 shrink-0 scale-[0.6] min-[380px]:scale-[0.7] origin-top">
+                             <div className="absolute inset-0 transform -translate-y-[50px] w-full h-full">
                                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-0">
-                                 <TacticalGlobe data={[{label: "Du", value: 30}, {label: "Se", value: 45}, {label: "Ch", value: 60}, {label: "Pa", value: 55}, {label: "Ju", value: 85}, {label: "Sh", value: 95}, {label: "Ya", value: 40}]} size={176} />
+                                 <TacticalGlobe data={globeData} size={176} />
                                </div>
                                <div className="absolute inset-0 z-10">
-                                 <WeeklyProgress data={[30, 45, 60, 55, 85, 95, 40]} mode="hafta" />
+                                 <WeeklyProgress data={hududData} mode={mode} />
                                </div>
                              </div>
                            </div>
                          </div>
                        </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2 px-1">
