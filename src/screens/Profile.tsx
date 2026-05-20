@@ -14,7 +14,7 @@ import {
   Smartphone, Watch, Languages, EyeOff, UserCheck, Link2, Link2Off,
   User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Quote,
   Battery, Bluetooth, AlertTriangle, Volume1, Volume, RefreshCw,
-  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight, GraduationCap, Apple
+  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight, GraduationCap, Apple, Moon
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/src/lib/utils";
@@ -461,8 +461,12 @@ const MARATHON_PLAN_DATA = [
   }
 ];
 
-const MarathonPlanModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+const MarathonPlanModal = ({ isOpen, onClose, marathon }: { isOpen: boolean, onClose: () => void, marathon?: any }) => {
   if (!isOpen) return null;
+
+  const plan = marathon?.marathonPlan;
+  const schedule = plan?.weeklySchedule || [];
+  const totalWeeks = plan?.totalWeeks || marathon?.timeLeft?.split(' ')[0] || 8;
 
   return (
     <AnimatePresence>
@@ -470,22 +474,22 @@ const MarathonPlanModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-2xl flex justify-center overflow-hidden"
+        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex justify-center items-end"
       >
         <motion.div 
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="w-full max-w-[450px] bg-[#0A0A0F] border-t border-white/10 rounded-t-[40px] flex flex-col mt-20"
+          transition={{ type: "spring", damping: 30, stiffness: 250 }}
+          className="w-full max-w-[450px] h-[92vh] bg-[#0A0A0F] rounded-t-[40px] flex flex-col border-t border-white/10 shadow-2xl relative overflow-hidden"
         >
           {/* Header */}
-          <div className="p-8 flex items-center justify-between">
+          <div className="p-8 pt-10 flex items-center justify-between bg-[#0A0A0F]/80 backdrop-blur-md sticky top-0 z-10">
             <div>
               <h2 className="text-2xl font-black italic tracking-tight text-white mb-1">MARAFON REJASI</h2>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#FF005C] animate-pulse" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#FF005C]">Step-by-step Transformation</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#FF005C]">AI Murabbiy bilan natijaga sari</p>
               </div>
             </div>
             <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white active:scale-90 transition-all border border-white/5">
@@ -493,93 +497,104 @@ const MarathonPlanModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
             </button>
           </div>
 
-          {/* Stats Bar */}
-          <div className="px-8 mb-8">
-            <div className="grid grid-cols-3 gap-4 p-4 bg-white/[0.03] rounded-3xl border border-white/5">
-              <div className="text-center">
-                <p className="text-[8px] font-black uppercase text-white/30 mb-1">Davomiyligi</p>
-                <p className="text-sm font-black text-white">8 Hafta</p>
-              </div>
-              <div className="text-center border-x border-white/5">
-                <p className="text-[8px] font-black uppercase text-white/30 mb-1">Intensivlik</p>
-                <p className="text-sm font-black text-primary">Yuqori</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[8px] font-black uppercase text-white/30 mb-1">Maqsad</p>
-                <p className="text-sm font-black text-[#FF005C]">21.1 KM</p>
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            {/* Stats Bar */}
+            <div className="px-8 mb-8">
+              <div className="grid grid-cols-3 gap-4 p-4 bg-white/[0.03] rounded-3xl border border-white/5">
+                <div className="text-center">
+                  <p className="text-[8px] font-black uppercase text-white/30 mb-1">Davomiyligi</p>
+                  <p className="text-sm font-black text-white">{totalWeeks} Hafta</p>
+                </div>
+                <div className="text-center border-x border-white/5">
+                  <p className="text-[8px] font-black uppercase text-white/30 mb-1">Intensivlik</p>
+                  <p className="text-sm font-black text-primary">Optimal</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] font-black uppercase text-white/30 mb-1">Maqsad</p>
+                  <p className="text-sm font-black text-[#FF005C] text-xs leading-none mt-1">{marathon?.total || 21.1} KM</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-8 pb-32 space-y-8 no-scrollbar">
-            {MARATHON_PLAN_DATA.map((weekData) => (
-              <div key={weekData.week} className="relative">
-                <div className="flex items-center gap-4 mb-4">
+            {/* AI Insight */}
+            {plan?.aiInsight && (
+              <div className="px-8 mb-8">
+                <div className="p-5 bg-primary/5 border border-primary/20 rounded-3xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Murabbiy tavsiyasi</h4>
+                  </div>
+                  <p className="text-[11px] text-white/70 italic leading-relaxed font-medium">"{plan.aiInsight}"</p>
+                </div>
+              </div>
+            )}
+
+            {/* Scrollable Content */}
+            <div className="px-8 pb-32 space-y-8">
+              <div className="relative">
+                <div className="flex items-center gap-4 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center text-white font-black italic shadow-lg shadow-[#FF005C]/20">
-                    {weekData.week}
+                    1
                   </div>
                   <div>
-                    <h3 className="text-white text-xs font-black uppercase tracking-widest">{weekData.title}</h3>
-                    <p className="text-white/40 text-[9px] font-bold italic">{weekData.focus}</p>
+                    <h3 className="text-white text-xs font-black uppercase tracking-widest">Amaldagi Hafta Rejasi</h3>
+                    <p className="text-white/40 text-[9px] font-bold italic">Asosiy poydevor qurish bosqichi</p>
                   </div>
                 </div>
 
                 <div className="space-y-3 pl-4 border-l-2 border-white/5">
-                  {weekData.days.map((day, idx) => (
+                  {schedule.length > 0 ? schedule.map((item: any, idx: number) => (
                     <div 
                       key={idx}
-                      className={cn(
-                        "p-4 rounded-2xl border transition-all flex items-center justify-between",
-                        day.completed 
-                          ? "bg-primary/10 border-primary/20" 
-                          : day.dist === 'OFF' 
-                            ? "bg-white/[0.02] border-white/5 opacity-50"
-                            : "bg-white/[0.05] border-white/10"
-                      )}
+                      className="p-4 rounded-2xl border transition-all flex flex-col bg-white/[0.05] border-white/10"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black",
-                          day.completed ? "bg-primary text-black" : "bg-white/10 text-white/40"
-                        )}>
-                          {day.day}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-4">
+                          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[10px] font-black text-white/40">
+                            {item.day}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-white">
+                              {item.type === 'DAM' ? 'Dam olish' : `${item.type}: ${item.distance}`}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className={cn(
-                            "text-[10px] font-black uppercase tracking-wider",
-                            day.completed ? "text-primary" : "text-white"
-                          )}>
-                            {day.dist === 'OFF' ? 'Dam olish kuni' : `${day.type}: ${day.dist}`}
-                          </p>
-                          {day.dist !== 'OFF' && (
-                            <p className="text-[8px] font-bold text-white/30 uppercase">Maqsad temp: {day.pace}</p>
-                          )}
-                        </div>
+                        {item.type === 'DAM' && (
+                          <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-white/20">
+                            <Moon className="w-3.5 h-3.5" />
+                          </div>
+                        )}
                       </div>
-                      {day.completed && (
-                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                          <Check className="w-3.5 h-3.5 text-black" />
-                        </div>
+                      {item.description && (
+                        <p className="text-[9px] font-medium text-white/40 pl-12 italic leading-tight">
+                          {item.description}
+                        </p>
                       )}
                     </div>
-                  ))}
+                  )) : (
+                    <div className="p-8 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
+                      <p className="text-[10px] font-black uppercase text-white/20">Reja ma'lumotlari topilmadi</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-            
-            {/* Locked Weeks */}
-            <div className="p-8 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center justify-center text-center opacity-40">
-              <Lock className="w-8 h-8 text-white/20 mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Hafta 5-8 tez orada ochiladi</p>
-              <p className="text-[8px] font-bold text-white/20 mt-1 italic">Dastlabki 4 haftani yakunlang</p>
+              
+              <div className="p-8 border-2 border-dashed border-white/5 rounded-[32px] flex flex-col items-center justify-center text-center opacity-40">
+                <Lock className="w-8 h-8 text-white/20 mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Kelasi haftalar jadvali</p>
+                <p className="text-[8px] font-bold text-white/20 mt-1 italic">Joriy natijalaringiz tahlili asosida shakllanadi</p>
+              </div>
+              
+              <div className="h-32" /> {/* Spacer for footer */}
             </div>
           </div>
           
-          {/* Action Footer */}
-          <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent">
-             <button className="w-full py-5 bg-primary text-black font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_10px_30px_rgba(204,255,0,0.3)] active:scale-95 transition-all text-xs">
-               Keyingi mashg'ulotni boshlash
+          <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F] to-transparent z-20">
+             <button 
+               onClick={onClose}
+               className="w-full py-5 bg-primary text-black font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_10px_30px_rgba(204,255,0,0.3)] active:scale-95 transition-all text-xs"
+             >
+               Tushunarli
              </button>
           </div>
         </motion.div>
@@ -874,27 +889,126 @@ const AIChatModal = ({
                   <div>
                     <p>{msg.text.replace(/\[CHART:[^\]]*\]/gi, '').trim()}</p>
                     {msg.text.includes("[CHART:distance]") && (
-                      <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
-                        <TacticalSparkline data={STATS_CARDS[0].chartData} color={STATS_CARDS[0].color} />
-                        <p className="text-[8px] font-black uppercase text-center mt-2 text-primary/60 tracking-widest">Masofa Dinamikasi (km)</p>
+                      <div className="mt-4 p-5 bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden group">
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Haftalik Masofa</span>
+                            </div>
+                            <span className="text-[10px] font-black italic text-primary">62.4 KM</span>
+                        </div>
+                        <div className="h-24 w-full relative">
+                          <svg className="w-full h-full overflow-visible">
+                            <path 
+                              d="M 0,80 Q 25,20 50,60 T 100,20 T 150,50 T 200,30 T 250,70 T 300,10 T 350,40" 
+                              fill="none" 
+                              stroke="#CCFF00" 
+                              strokeWidth="2.5" 
+                              strokeLinecap="round"
+                              className="animate-draw"
+                              style={{ strokeDasharray: 400, strokeDashoffset: 400 }}
+                            />
+                            <circle cx="350" cy="40" r="4" fill="#CCFF00" className="animate-pulse" />
+                          </svg>
+                          <div className="absolute bottom-[-10px] left-0 w-full flex justify-between text-[8px] font-black text-white/20 uppercase tracking-widest px-1">
+                            <span>Du</span><span>Se</span><span>Ch</span><span>Pa</span><span>Ju</span><span>Sh</span><span>Ya</span>
+                          </div>
+                        </div>
                       </div>
                     )}
                     {msg.text.includes("[CHART:pace]") && (
-                       <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
-                         <TacticalSparkline data={STATS_CARDS[1].chartData} color={STATS_CARDS[1].color} />
-                         <p className="text-[8px] font-black uppercase text-center mt-2 text-[#00F0FF]/60 tracking-widest">Temp Ko'rsatkichlari (min/km)</p>
+                       <div className="mt-4 p-5 bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden group">
+                         <div className="flex justify-between items-center mb-6">
+                             <div className="flex items-center gap-2">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-[#00F0FF] animate-pulse" />
+                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Temp O'zgarishi</span>
+                             </div>
+                             <span className="text-[10px] font-black italic text-[#00F0FF]">5'12" MIN/KM</span>
+                         </div>
+                         <div className="h-24 w-full relative">
+                           <div className="flex items-end justify-between h-full px-2 gap-2">
+                             {[40, 60, 30, 80, 50, 90, 70].map((val, idx) => (
+                               <motion.div 
+                                 key={idx}
+                                 initial={{ height: 0 }}
+                                 animate={{ height: `${val}%` }}
+                                 transition={{ delay: idx * 0.1, duration: 1, ease: "circOut" }}
+                                 className="flex-1 bg-gradient-to-t from-[#00F0FF]/20 to-[#00F0FF] rounded-t-xl relative group/bar"
+                               >
+                                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity text-[8px] font-black text-[#00F0FF]">
+                                   {idx === 6 ? "5'12\"" : "5'22\""}
+                                 </div>
+                               </motion.div>
+                             ))}
+                           </div>
+                           <div className="absolute bottom-[-15px] left-0 w-full flex justify-between text-[8px] font-black text-white/20 uppercase tracking-widest px-2">
+                             <span>D</span><span>S</span><span>C</span><span>P</span><span>J</span><span>S</span><span>Y</span>
+                           </div>
+                         </div>
                        </div>
                     )}
                     {msg.text.includes("[CHART:heart]") && (
-                       <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
-                         <TacticalSparkline data={STATS_CARDS[2].chartData} color={STATS_CARDS[2].color} />
-                         <p className="text-[8px] font-black uppercase text-center mt-2 text-[#FF005C]/60 tracking-widest">Yurak Urish Ritmi (BPM)</p>
+                       <div className="mt-4 p-5 bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden group">
+                         <div className="flex justify-between items-center mb-6">
+                             <div className="flex items-center gap-2">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-[#FF005C] animate-pulse" />
+                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Yurak Ritmi</span>
+                             </div>
+                             <span className="text-[10px] font-black italic text-[#FF005C]">164 BPM</span>
+                         </div>
+                         <div className="h-24 w-full flex items-center justify-center">
+                            <motion.div 
+                              animate={{ 
+                                scale: [1, 1.1, 1],
+                                opacity: [0.3, 0.6, 0.3]
+                              }}
+                              transition={{ duration: 0.6, repeat: Infinity }}
+                              className="absolute w-20 h-20 bg-[#FF005C]/20 blur-[30px] rounded-full"
+                            />
+                            <svg className="w-full h-20 overflow-visible">
+                              <path 
+                                d="M 0,40 L 40,40 L 50,10 L 60,70 L 70,40 L 110,40 L 120,10 L 130,70 L 140,40 L 180,40 L 190,10 L 200,70 L 210,40 L 250,40" 
+                                fill="none" 
+                                stroke="#FF005C" 
+                                strokeWidth="2.5" 
+                                strokeLinejoin="round"
+                                className="animate-pulse"
+                              />
+                            </svg>
+                         </div>
                        </div>
                     )}
                     {(msg.text.includes("[CHART:area]") || msg.text.includes("[CHART:hudud]")) && (
-                       <div className="mt-3 h-28 w-full bg-white/5 rounded-2xl p-3 border border-white/10 shadow-inner">
-                         <TacticalSparkline data={[{value: 5.2}, {value: 8.4}, {value: 12.1}, {value: 10.5}, {value: 14.8}, {value: 13.9}, {value: 15.2}]} color="#00F0FF" /> 
-                         <p className="text-[8px] font-black uppercase text-center mt-2 text-[#00F0FF]/60 tracking-widest">Hudud Egallash Dinamikasi (km²)</p>
+                       <div className="mt-4 bg-[#0B0C10] border border-white/5 rounded-3xl overflow-hidden group">
+                         <div className="p-5 pb-0">
+                           <div className="flex justify-between items-start mb-6">
+                               <div className="flex flex-col">
+                                 <div className="flex items-center gap-2 mb-1">
+                                     <div className="w-1.5 h-1.5 rounded-full bg-[#CCFF00] animate-pulse shadow-[0_0_8px_#CCFF00]" />
+                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#CCFF00]/80">Hudud Egallash</span>
+                                 </div>
+                                 <span className="text-xl font-black italic tracking-tighter text-white">12.4 KM² <span className="text-white/30 text-[9px] tracking-widest not-italic">UMUMIY</span></span>
+                               </div>
+                               <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10">
+                                 <button className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full transition-all bg-[#CCFF00] text-black shadow-[0_0_10px_rgba(204,255,0,0.5)]">
+                                   HAFTA
+                                 </button>
+                               </div>
+                           </div>
+                         </div>
+                         
+                         <div className="relative w-full h-[220px] overflow-hidden flex justify-center mt-2">
+                           <div className="relative w-[340px] h-64 shrink-0 scale-[0.72] min-[380px]:scale-[0.8] origin-top">
+                             <div className="absolute inset-0 transform -translate-y-[75px] w-full h-full">
+                               <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-0">
+                                 <TacticalGlobe data={[{label: "Du", value: 30}, {label: "Se", value: 45}, {label: "Ch", value: 60}, {label: "Pa", value: 55}, {label: "Ju", value: 85}, {label: "Sh", value: 95}, {label: "Ya", value: 40}]} size={176} />
+                               </div>
+                               <div className="absolute inset-0 z-10">
+                                 <WeeklyProgress data={[30, 45, 60, 55, 85, 95, 40]} mode="hafta" />
+                               </div>
+                             </div>
+                           </div>
+                         </div>
                        </div>
                     )}
                   </div>
@@ -1087,13 +1201,13 @@ interface Goal {
   total: number;
   current: number;
   unit: string;
-  icon: React.ReactNode;
   color: string;
   reward: string;
   timeLeft?: string;
   category: 'distance' | 'time' | 'calories' | 'xp';
   type: 'weekly' | 'monthly' | 'custom';
   status: 'active' | 'completed';
+  marathonPlan?: any;
 }
 
 const TRAINING_PARTNERS = [
@@ -1111,7 +1225,6 @@ const INITIAL_GOALS: Goal[] = [
     current: 47.3,
     total: 60,
     unit: "km",
-    icon: <Target className="w-5 h-5" />,
     color: "#CCFF00",
     reward: "500 XP",
     timeLeft: "2 kun qoldi",
@@ -1127,7 +1240,6 @@ const INITIAL_GOALS: Goal[] = [
     current: 0,
     total: 21,
     unit: "km",
-    icon: <Award className="w-5 h-5" />,
     color: "#FF005C",
     reward: "2100 XP",
     timeLeft: "8 hafta qoldi",
@@ -1143,7 +1255,6 @@ const INITIAL_GOALS: Goal[] = [
     current: 147.3,
     total: 300,
     unit: "km",
-    icon: <Trophy className="w-5 h-5" />,
     color: "#00A3FF",
     reward: "2500 XP + Badge",
     timeLeft: "12 kun qoldi",
@@ -1159,7 +1270,6 @@ const INITIAL_GOALS: Goal[] = [
     current: 5,
     total: 10,
     unit: "ta",
-    icon: <Zap className="w-5 h-5" />,
     color: "#FF005C",
     reward: "1000 XP",
     timeLeft: "5 kun qoldi",
@@ -1178,7 +1288,6 @@ const COMPLETED_GOALS: Goal[] = [
     current: 250,
     total: 250,
     unit: "km",
-    icon: <Award className="w-5 h-5" />,
     color: "#CCFF00",
     reward: "3000 XP",
     category: 'distance',
@@ -1193,7 +1302,6 @@ const COMPLETED_GOALS: Goal[] = [
     current: 7,
     total: 7,
     unit: "kun",
-    icon: <Flame className="w-5 h-5" />,
     color: "#FF8A00",
     reward: "800 XP",
     category: 'time',
@@ -1203,15 +1311,36 @@ const COMPLETED_GOALS: Goal[] = [
 ];
 
 const WeatherModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const forecast = [
-    { day: "Dushanba", temp: 24, icon: <Sun className="w-6 h-6 text-yellow-400" />, condition: "Ochiq", wind: 12 },
-    { day: "Seshanba", temp: 26, icon: <Sun className="w-6 h-6 text-yellow-500" />, condition: "Issiq", wind: 8 },
-    { day: "Chorshanba", temp: 22, icon: <CloudRain className="w-6 h-6 text-blue-400" />, condition: "Yomg'ir", wind: 24 },
-    { day: "Payshanba", temp: 21, icon: <CloudRain className="w-6 h-6 text-blue-300" />, condition: "Yomg'ir", wind: 18 },
-    { day: "Juma", temp: 23, icon: <CloudRain className="w-6 h-6 text-blue-200" />, condition: "Bulutli", wind: 10 },
-    { day: "Shanba", temp: 25, icon: <Sun className="w-6 h-6 text-yellow-400" />, condition: "Ochiq", wind: 15 },
-    { day: "Yakshanba", temp: 27, icon: <Sun className="w-6 h-6 text-yellow-500" />, condition: "Juda Issiq", wind: 5 },
+  const dayNames = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
+  const now = new Date();
+  const currentDayIndex = now.getDay();
+  
+  const weatherIcons = [
+    <Sun className="w-6 h-6 text-yellow-400" />,
+    <Sun className="w-6 h-6 text-yellow-500" />,
+    <CloudRain className="w-6 h-6 text-blue-400" />,
+    <CloudRain className="w-6 h-6 text-blue-300" />,
+    <CloudRain className="w-6 h-6 text-blue-200" />,
+    <Sun className="w-6 h-6 text-yellow-400" />,
+    <Sun className="w-6 h-6 text-yellow-500" />
   ];
+
+  const temps = [24, 26, 22, 21, 23, 25, 27];
+  const conditions = ["Ochiq", "Issiq", "Yomg'ir", "Yomg'ir", "Bulutli", "Ochiq", "Juda Issiq"];
+  const winds = [12, 8, 24, 18, 10, 15, 5];
+
+  const forecast = Array.from({ length: 7 }).map((_, i) => {
+    const dayIndex = (currentDayIndex + i) % 7;
+    return {
+      day: i === 0 ? "Bugun" : dayNames[dayIndex],
+      temp: temps[dayIndex],
+      icon: weatherIcons[dayIndex],
+      condition: conditions[dayIndex],
+      wind: winds[dayIndex]
+    };
+  });
+
+  const today = forecast[0];
 
   return (
     <AnimatePresence>
@@ -1259,23 +1388,25 @@ const WeatherModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   <div className="flex items-center justify-between relative z-10">
                     <div>
                       <p className="text-[#00A3FF] text-[10px] font-black uppercase tracking-widest mb-2">Bugun</p>
-                      <h3 className="text-6xl font-black text-white">24°</h3>
-                      <p className="text-white/60 text-sm font-bold mt-2 italic">Minimal o'zgarishlar kutilmoqda</p>
+                      <h3 className="text-6xl font-black text-white">{today.temp}°</h3>
+                      <p className="text-white/60 text-sm font-bold mt-2 italic">{today.condition} kutilmoqda</p>
                     </div>
                     <div className="w-24 h-24 rounded-[32px] bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl">
-                      <Sun className="w-12 h-12 text-yellow-400 animate-spin-slow" />
+                        <div className="scale-[2] origin-center text-yellow-400">
+                          {today.icon}
+                        </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/10 relative z-10">
                     <div className="text-center">
                       <Wind className="w-4 h-4 text-white/20 mx-auto mb-2" />
-                      <p className="text-[10px] font-black text-white uppercase">12 km/s</p>
+                      <p className="text-[10px] font-black text-white uppercase">{today.wind} km/s</p>
                       <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mt-1">Shamol</p>
                     </div>
                     <div className="text-center">
                       <CloudRain className="w-4 h-4 text-white/20 mx-auto mb-2" />
-                      <p className="text-[10px] font-black text-white uppercase">0%</p>
+                      <p className="text-[10px] font-black text-white uppercase">{today.condition === "Yomg'ir" ? "80%" : "0%"}</p>
                       <p className="text-[8px] font-bold text-white/20 uppercase tracking-wider mt-1">Yomg'ir</p>
                     </div>
                     <div className="text-center">
@@ -1386,6 +1517,8 @@ const GoalsModal = ({
   const [marafonDurationUnit, setMarafonDurationUnit] = useState<'Hafta' | 'Oy'>('Hafta');
   const [marafonDaysPerWeek, setMarafonDaysPerWeek] = useState('3');
   const [isCalculated, setIsCalculated] = useState(false);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [marathonPlanData, setMarathonPlanData] = useState<any>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
@@ -1429,7 +1562,6 @@ const GoalsModal = ({
       current: 0,
       total: parseFloat(newGoalValue),
       unit: unit,
-      icon: newGoalType === 'Masofa' ? <Target className="w-5 h-5" /> : newGoalType === 'Vaqt' ? <Clock className="w-5 h-5" /> : <Zap className="w-5 h-5" />,
       color: color,
       reward: `${Math.floor(parseFloat(newGoalValue) * 10)} XP`,
       timeLeft: newGoalPeriod === 'Haftalik' ? '7 kun qoldi' : newGoalPeriod === 'Oylik' ? '30 kun qoldi' : 'Maxsus muddat',
@@ -1540,7 +1672,7 @@ const GoalsModal = ({
                   <div className="flex justify-between items-start w-full relative z-10">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-full bg-[#161616] shadow-[2px_2px_5px_#080808,-2px_-2px_5px_#242424] flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4" style={{ color: goal.color }}>
-                        {goal.icon}
+                        {goal.category === 'distance' ? <Target className="w-5 h-5" /> : goal.category === 'time' ? <Clock className="w-5 h-5" /> : goal.category === 'xp' ? <Zap className="w-5 h-5" /> : <Award className="w-5 h-5" />}
                       </div>
                       <div className="flex flex-col flex-1">
                         <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest leading-none">{goal.timeLeft}</span>
@@ -1576,7 +1708,7 @@ const GoalsModal = ({
               {filteredHistory.map((goal) => (
                 <div key={goal.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-4 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40">
-                    {goal.icon}
+                    {goal.category === 'distance' ? <Target className="w-5 h-5" /> : goal.category === 'time' ? <Clock className="w-5 h-5" /> : goal.category === 'xp' ? <Zap className="w-5 h-5" /> : <Award className="w-5 h-5" />}
                   </div>
                   <div className="flex-1">
                     <h4 className="text-xs font-black uppercase tracking-tight text-white/80">{goal.title}</h4>
@@ -1816,17 +1948,45 @@ const GoalsModal = ({
 
                   {!isCalculated ? (
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
                         if (parseFloat(marafonDistance) < 3) {
                           alert("Marafon masofasi kamida 3 km bo'lishi kerak!");
                           return;
                         }
-                        setIsCalculated(true);
+                        setIsGeneratingPlan(true);
+                        try {
+                          const res = await fetch("/api/generateMarathonPlan", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              distance: marafonDistance,
+                              durationValue: marafonDurationValue,
+                              durationUnit: marafonDurationUnit,
+                              daysPerWeek: marafonDaysPerWeek
+                            })
+                          });
+                          if (!res.ok) throw new Error("Failed");
+                          const data = await res.json();
+                          setMarathonPlanData(data);
+                          setIsCalculated(true);
+                        } catch (error) {
+                          console.error(error);
+                          alert("Reja yaratishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+                        } finally {
+                          setIsGeneratingPlan(false);
+                        }
                       }}
-                      disabled={!marafonDistance || !marafonDurationValue}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-[0_0_20px_rgba(255,0,92,0.3)] active:scale-95 transition-all mt-4 disabled:opacity-50 disabled:grayscale"
+                      disabled={!marafonDistance || !marafonDurationValue || isGeneratingPlan}
+                      className="w-full h-14 flex items-center justify-center rounded-xl bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-[0_0_20px_rgba(255,0,92,0.3)] active:scale-95 transition-all mt-4 disabled:opacity-50 disabled:grayscale relative overflow-hidden"
                     >
-                      AI Reja Yaratish
+                      {isGeneratingPlan ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>AI Tahlil Qilmoqda...</span>
+                        </div>
+                      ) : (
+                        "AI Reja Yaratish"
+                      )}
                     </button>
                   ) : (
                     <div className="mt-6 space-y-4 animate-fade-in border-t border-white/10 pt-6 relative">
@@ -1877,32 +2037,15 @@ const GoalsModal = ({
                                   <Sparkles className="w-4 h-4 text-[#FF005C]" />
                                   <h5 className="text-[10px] font-black uppercase tracking-widest text-white/80">AI Tavsiyalari</h5>
                                 </div>
-                                <ul className="space-y-3">
-                                  <li className="flex items-start gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#00A3FF] mt-1.5 shrink-0" />
-                                    <p className="text-[11px] text-white/70 font-medium leading-relaxed">
-                                      <strong className="text-white">Tayyorgarlik faza:</strong> Sizda jami {totalWeeks} hafta bor. Dastlabki 3 haftani bazaviy chidamlilik uchun past tempda (Zon 2) yugurishga bag'ishlang.
-                                    </p>
-                                  </li>
-                                  <li className="flex items-start gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                                    <p className="text-[11px] text-white/70 font-medium leading-relaxed">
-                                      <strong className="text-white">Yuklamani oshirish (10% qoidasi):</strong> Har haftalik umumiy masofani 10% dan ortiq oshirmang.
-                                    </p>
-                                  </li>
-                                  <li className="flex items-start gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF005C] mt-1.5 shrink-0" />
-                                    <p className="text-[11px] text-white/70 font-medium leading-relaxed">
-                                      <strong className="text-white">Tiklanish:</strong> {7 - days} kun albatta mushaklarni tiklash va yoga ga ajrating.
-                                    </p>
-                                  </li>
-                                </ul>
+                                <p className="text-[11px] text-white/70 font-medium leading-relaxed italic">
+                                  {marathonPlanData?.aiInsight || `Sizda jami ${totalWeeks} hafta bor. Dastlabki 3 haftani bazaviy chidamlilik uchun past tempda (Zon 2) yugurishga bag'ishlang.`}
+                                </p>
                               </div>
 
                               <button 
                                 onClick={() => {
                                   const title = `${dist}km AI Marafon - ${totalWeeks} hafta`;
-                                  const newG: Goal = {
+                                  const newG: any = {
                                     id: Date.now(),
                                     title: title,
                                     subtitle: `0 / ${dist} km`,
@@ -1913,10 +2056,10 @@ const GoalsModal = ({
                                     color: "#FF005C",
                                     timeLeft: `${totalWeeks} hafta qoldi`,
                                     reward: `${Math.round(dist * 100)} XP`,
-                                    icon: <Award className="w-5 h-5" />,
                                     category: 'distance',
                                     type: 'custom',
-                                    status: 'active'
+                                    status: 'active',
+                                    marathonPlan: marathonPlanData
                                   };
                                   setGoals([newG, ...goals]);
                                   onClose();
@@ -4199,10 +4342,12 @@ export default function Profile() {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [activeGoalSubTab, setActiveGoalSubTab] = useState("AI Marafon Rejalari");
+  const [expandedMarathonId, setExpandedMarathonId] = useState<number | null>(null);
   const [activityTab, setActivityTab] = useState<"KM" | "HUDUD" | "QADAM">("KM");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [isMarathonPlanModalOpen, setIsMarathonPlanModalOpen] = useState(false);
+  const [selectedMarathonForPlan, setSelectedMarathonForPlan] = useState<any>(null);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isHandsFree, setIsHandsFree] = useState(false);
   const [isAIVoiceAssistantActive, setIsAIVoiceAssistantActive] = useState(false);
@@ -4857,7 +5002,9 @@ export default function Profile() {
         - O'rtacha Temp (Pace): 5'12" / km
         - O'rtacha Puls: 142 bpm
         - Suv sarfi: ${waterIntake} ml / 3000 ml
-        - Faol maqsadlar: ${goals.map(g => g.title).join(", ")}
+        - Faol maqsadlar: ${goals.filter((g: any) => g.status === 'active').map((g: any) => `${g.title} (${g.current}/${g.total} ${g.unit})`).join(", ")}
+        - Yakunlangan maqsadlar: ${completedGoals.map((g: any) => g.title).join(", ") || "Hali yo'q"}
+        - Marafon rejalari: ${goals.filter((g: any) => g.marathonPlan).map((g: any) => `\n          * ${g.title}:\n            Davomiyligi: ${g.marathonPlan.totalWeeks} hafta\n            Haftalik reja: ${(g.marathonPlan.weeklySchedule || []).map((w: any) => `${w.day}: ${w.distance || w.type}`).join(', ')}\n            Tavsiya: ${g.marathonPlan.aiInsight || ''}`).join("") || "Yo'q"}
         - So'nggi Yutuqlar: Yunusobod Qiroli
         - Shaxsiy Rekord: 1km masofani 4:12 da bosib o'tdi
 
@@ -5057,7 +5204,7 @@ export default function Profile() {
       const currentDayUz = daysUz[now.getDay()];
       const currentDateStr = now.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' });
 
-      const statsSummary = `Bugun ${currentDayUz}, ${currentDateStr}. Masofa: 47.3 km (60km maqsad). Temp: 5'12". Puls: 142. Suv: ${waterIntake}/3000ml.`;
+      const statsSummary = `Bugun ${currentDayUz}, ${currentDateStr}. Masofa: 47.3 km (60km maqsad). Temp: 5'12". Puls: 142. Suv: ${waterIntake}/3000ml. Maqsadlari: ${goals.filter((g:any)=>g.status==='active').map((g:any)=>g.title).join(", ")}. Marafon rejasi mavjud: ${goals.some((g:any)=>g.marathonPlan) ? 'ha (ular haqida sorasa maslahat bering)' : 'yoq'}.`;
 
       const systemInstruction = `SIZ 'ZONIC' OVOZLI AI MURABBIYISIZ. 
           
@@ -5399,8 +5546,29 @@ export default function Profile() {
   });
 
   // Unified Goals State
-  const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
-  const [completedGoals, setCompletedGoals] = useState<Goal[]>(COMPLETED_GOALS);
+  const [goals, setGoals] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('profileGoals');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_GOALS;
+  });
+  const [completedGoals, setCompletedGoals] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('profileCompletedGoals');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return COMPLETED_GOALS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('profileGoals', JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem('profileCompletedGoals', JSON.stringify(completedGoals));
+  }, [completedGoals]);
+
   const [newsItems, setNewsItems] = useState(NEWS_ITEMS);
 
   // Dynamic Chart Data Logic
@@ -7798,8 +7966,17 @@ export default function Profile() {
             >
               {/* Goals Section */}
               <section className="px-6 pt-6 mb-12">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-black tracking-tighter uppercase text-white">Maqsadlar</h2>
+                <div className="flex items-end justify-between mb-8">
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tighter uppercase text-white leading-none">Maqsadlar</h2>
+                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-2">Shaxsiy rivojlanish va marralar</p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[24px] font-black italic text-[#CCFF00] leading-none">
+                      {Math.round(goals.reduce((acc, curr) => acc + curr.progress, 0) / (goals.length || 1))}%
+                    </span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-white/20 mt-1">Umumiy progress</span>
+                  </div>
                 </div>
 
                 {/* Sub-tabs for Maqsadlar */}
@@ -7827,226 +8004,269 @@ export default function Profile() {
                 <div className="flex flex-col gap-4 mb-8">
                   {activeGoalSubTab === "AI Marafon Rejalari" && (
                     <div className="space-y-6">
-                      {goals.find(g => g.type === 'custom' && g.title.includes('Marafon')) && (
+                      {goals.filter(g => g.type === 'custom' && g.title.includes('Marafon')).length > 0 && (
                         <div className="space-y-4 animate-fade-in">
-                          {(() => {
-                            const marathon = goals.find(g => g.type === 'custom' && g.title.includes('Marafon'))!;
-                            return (
-                              <div className="bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] rounded-[32px] p-6 text-white shadow-[0_20px_40px_rgba(255,0,92,0.2)] relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full -mr-10 -mt-10" />
-                                <div className="relative z-10">
-                                  <div className="flex justify-between items-start mb-6">
-                                    <div>
-                                      <h3 className="text-2xl font-black italic tracking-tighter uppercase">{marathon.total} KM MARAFON</h3>
-                                      <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">{marathon.timeLeft}</p>
+                          <div className="flex flex-col gap-4">
+                            {goals.filter(g => g.type === 'custom' && g.title.includes('Marafon')).map((marathon) => (
+                              <div key={marathon.id} className="w-full flex flex-col gap-4">
+                                <div 
+                                  onClick={() => setExpandedMarathonId(prev => prev === marathon.id ? null : marathon.id)}
+                                  className="bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] rounded-[32px] p-6 text-white shadow-[0_20px_40px_rgba(255,0,92,0.2)] relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform"
+                                >
+                                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full -mr-10 -mt-10" />
+                                  <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-6">
+                                      <div>
+                                        <h3 className="text-2xl font-black italic tracking-tighter uppercase">{marathon.title}</h3>
+                                        <p className="text-white/70 text-[10px] font-black uppercase tracking-widest">{marathon.subtitle}</p>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setGoals(goals.filter(g => g.id !== marathon.id));
+                                          }}
+                                          className="w-12 h-12 bg-black/20 hover:bg-[#FF005C]/50 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 transition-all"
+                                        >
+                                          <Trash2 className="w-5 h-5 text-white/80" />
+                                        </button>
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                                          <Trophy className="w-6 h-6 text-white" />
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
-                                      <Trophy className="w-6 h-6 text-white" />
+                                    <div className="space-y-2 mb-6">
+                                      <div className="flex justify-between items-end">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Umumiy progress</span>
+                                        <span className="text-xl font-black">{marathon.progress}%</span>
+                                      </div>
+                                      <div className="w-full h-2 bg-black/20 rounded-full overflow-hidden">
+                                        <motion.div 
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${marathon.progress}%` }}
+                                          className="h-full bg-white shadow-[0_0_15px_white]"
+                                        />
+                                      </div>
                                     </div>
-                                  </div>
-                                  
-                                  <div className="space-y-2 mb-6">
-                                    <div className="flex justify-between items-end">
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Umumiy progress</span>
-                                      <span className="text-xl font-black">{marathon.progress}%</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-black/20 rounded-full overflow-hidden">
-                                      <motion.div 
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${marathon.progress}%` }}
-                                        className="h-full bg-white shadow-[0_0_15px_white]"
-                                      />
-                                    </div>
-                                  </div>
 
-                                  <div className="flex items-center gap-3 p-3 bg-black/20 rounded-2xl backdrop-blur-sm border border-white/5">
-                                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                                      <Sparkles className="w-4 h-4 text-black" />
+                                    <div className="flex items-center gap-3 p-3 bg-black/20 rounded-2xl backdrop-blur-sm border border-white/5">
+                                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                        <Sparkles className="w-4 h-4 text-black" />
+                                      </div>
+                                      <p className="text-[11px] font-bold leading-tight">
+                                        AI Coach: {marathon.marathonPlan?.aiInsight || `"Bugun ${Math.max(1, Math.floor(marathon.total / 10))} km sekin tempda. Chidamlilikni oshirish vaqti!"`}
+                                      </p>
                                     </div>
-                                    <p className="text-[11px] font-bold leading-tight">
-                                      AI Coach: "Bugun 4.2 km sekin tempda. Chidamlilikni oshirish vaqti!"
-                                    </p>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })()}
 
-                          {/* Weekly Roadmap */}
-                          <div className="bg-white/5 border border-white/5 rounded-[32px] p-6 backdrop-blur-xl">
-                            <h4 className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-6 px-2">Joriy Hafta: 1-Bosqich</h4>
-                            <div className="flex justify-between px-2">
-                              {['Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan', 'Yak'].map((day, idx) => {
-                                const isCompleted = idx < 2;
-                                const isCurrent = idx === 2;
-                                return (
-                                  <div key={day} className="flex flex-col items-center gap-3">
-                                    <div className={cn(
-                                      "w-10 h-14 rounded-2xl flex flex-col items-center justify-center border transition-all animate-fade-in",
-                                      isCompleted ? "bg-[#CCFF00] border-[#CCFF00] text-black" : 
-                                      isCurrent ? "bg-white/10 border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]" : 
-                                      "bg-white/[0.02] border-white/5 text-white/30"
-                                    )}>
-                                      <span className="text-[10px] font-black">{day[0]}</span>
-                                      <div className={cn(
-                                        "w-1.5 h-1.5 rounded-full mt-2",
-                                        isCompleted ? "bg-black" : isCurrent ? "bg-primary animate-pulse" : "bg-white/10"
-                                      )} />
-                                    </div>
-                                    <span className="text-[8px] font-bold uppercase tracking-widest text-center h-4">
-                                      {idx % 2 === 0 ? "4km" : "OFF"}
-                                    </span>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                            
+                                <AnimatePresence>
+                                  {expandedMarathonId === marathon.id && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0, marginTop: -16 }}
+                                      animate={{ opacity: 1, height: 'auto', marginTop: 0 }}
+                                      exit={{ opacity: 0, height: 0, marginTop: -16 }}
+                                      className="flex flex-col gap-4 overflow-hidden"
+                                    >
+                                      {/* Weekly Roadmap */}
+                                      <div className="bg-white/5 border border-white/5 rounded-[32px] p-6 backdrop-blur-xl">
+                                        <h4 className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-6 px-2">Joriy Hafta: 1-Bosqich</h4>
+                                        <div className="flex justify-between px-2">
+                                          {(marathon.marathonPlan?.weeklySchedule || ['Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan', 'Yak'].map(d => ({day: d, distance: d === 'Chor' ? '4km' : 'OFF'}))).map((scheduleItem: any, idx: number) => {
+                                            const day = typeof scheduleItem === 'string' ? scheduleItem : scheduleItem.day;
+                                            const distString = typeof scheduleItem === 'string' 
+                                              ? (idx % 2 === 0 ? "4km" : "DAM") 
+                                              : (scheduleItem.type === 'DAM' ? 'DAM' : scheduleItem.distance || scheduleItem.type);
+                                            const isCompleted = idx < 2;
+                                            const isCurrent = idx === 2;
+                                            return (
+                                              <div key={day} className="flex flex-col items-center gap-3">
+                                                <div className={cn(
+                                                  "w-10 h-14 rounded-2xl flex flex-col items-center justify-center border transition-all animate-fade-in",
+                                                  isCompleted ? "bg-[#CCFF00] border-[#CCFF00] text-black" : 
+                                                  isCurrent ? "bg-white/10 border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]" : 
+                                                  "bg-white/[0.02] border-white/5 text-white/30"
+                                                )}>
+                                                  <span className="text-[10px] font-black">{day[0]}</span>
+                                                  <div className={cn(
+                                                    "w-1.5 h-1.5 rounded-full mt-2",
+                                                    isCompleted ? "bg-black" : isCurrent ? "bg-primary animate-pulse" : "bg-white/10"
+                                                  )} />
+                                                </div>
+                                                <span className="text-[8px] font-bold uppercase tracking-widest text-center h-4">
+                                                  {distString}
+                                                </span>
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                        
+                                        <button 
+                                          onClick={() => {
+                                            setSelectedMarathonForPlan(marathon);
+                                            setIsMarathonPlanModalOpen(true);
+                                          }}
+                                          className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 mt-8 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                                        >
+                                          To'liq rejani ko'rish
+                                        </button>
+                                      </div>
+
+                                      {/* Audio Coach & Weather Modules */}
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 relative overflow-hidden group">
+                                          <div className="flex items-center justify-between mb-4">
+                                            <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/20">
+                                              <Headphones className="w-4 h-4 text-primary" />
+                                            </div>
+                                            <span className="text-[8px] font-black text-primary uppercase tracking-widest animate-pulse">Live</span>
+                                          </div>
+                                          <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Audio Coach</h4>
+                                          <p className="text-white/40 text-[8px] font-bold uppercase mb-4">Real-time motivatsiya</p>
+                                          
+                                          <div className="flex items-center gap-1 h-8 mb-4">
+                                            {[0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4, 0.7, 0.9, 0.5].map((h, i) => (
+                                              <motion.div
+                                                key={i}
+                                                animate={{ 
+                                                  height: isSpeaking 
+                                                    ? [`${h * 40}%`, `${(1-h) * 100}%`, `${h * 40}%`] 
+                                                    : [`${h * 20}%`, `${h * 30}%`, `${h * 20}%`] 
+                                                }}
+                                                transition={{ 
+                                                  duration: isSpeaking ? 0.6 : 2, 
+                                                  repeat: Infinity, 
+                                                  delay: i * 0.05, 
+                                                  ease: "easeInOut" 
+                                                }}
+                                                className={cn(
+                                                  "flex-1 rounded-full min-w-[2px] transition-colors duration-500",
+                                                  isSpeaking ? "bg-primary" : "bg-primary/30"
+                                                )}
+                                              />
+                                            ))}
+                                          </div>
+                                          
+                                          <button 
+                                            onClick={() => {
+                                              if (!isSpeaking) {
+                                                setIsSpeaking(true);
+                                                speakMotivation();
+                                                setTimeout(() => setIsSpeaking(false), 4000);
+                                              }
+                                            }}
+                                            className={cn(
+                                              "w-full py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all",
+                                              isSpeaking ? "bg-white/10 text-white/40 cursor-not-allowed" : "bg-primary text-black"
+                                            )}
+                                          >
+                                            {isSpeaking ? "Eshitilmoqda..." : "Tinglash"}
+                                          </button>
+                                        </div>
+
+                                        <div 
+                                          onClick={() => setIsWeatherModalOpen(true)}
+                                          className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 relative overflow-hidden group cursor-pointer active:scale-95 transition-all"
+                                        >
+                                          <div className="flex items-center justify-between mb-4">
+                                            <div className="w-8 h-8 rounded-xl bg-[#00A3FF]/20 flex items-center justify-center border border-[#00A3FF]/20">
+                                              <Sun className="w-4 h-4 text-[#00A3FF]" />
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                              <span className="text-white font-black text-xs">24°C</span>
+                                              <span className="text-[7px] font-bold text-white/30 uppercase">Toshkent</span>
+                                            </div>
+                                          </div>
+                                          
+                                          <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Ob-havo AI</h4>
+                                          
+                                          <div className="flex gap-2 mb-3">
+                                            <div className="flex-1 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                                              <Wind className="w-3 h-3 text-[#00A3FF]/60 mb-1" />
+                                              <p className="text-[8px] font-black text-white">12 km/s</p>
+                                            </div>
+                                            <div className="flex-1 bg-white/[0.03] rounded-lg p-2 border border-white/5">
+                                              <CloudRain className="w-3 h-3 text-[#00A3FF]/60 mb-1" />
+                                              <p className="text-[8px] font-black text-white">0%</p>
+                                            </div>
+                                          </div>
+
+                                          <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/20 rounded-xl p-2">
+                                            <p className="text-[8px] text-[#CCFF00] font-black uppercase leading-tight">
+                                              AI Tavsiya: Ideal!
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* AI Coach Insight */}
+                                      <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] rounded-[32px] blur opacity-20 group-hover:opacity-40 transition-all" />
+                                        <div className="relative bg-[#0F0F1B] border border-white/10 rounded-[32px] p-6 overflow-hidden">
+                                          <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center shadow-lg shadow-[#FF005C]/20">
+                                              <Sparkles className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div>
+                                              <h4 className="text-white text-sm font-black uppercase tracking-widest">AI Murabbiy Tahlili</h4>
+                                              <p className="text-[#FF005C] text-[8px] font-black uppercase tracking-widest">Premium Insight</p>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="space-y-4">
+                                            <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                                              <p className="text-[11px] text-white/70 leading-relaxed italic">
+                                                "Oxirgi 3 ta mashg'ulotingizda tempingiz barqarorlashganini ko'ryapman. Bu chidamlilik oshganidan dalolat beradi. Masofani biroz oshirsangiz bo'ladi."
+                                              </p>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                                                <p className="text-[7px] text-white/30 uppercase font-black mb-1">Tiklanish</p>
+                                                <div className="flex items-center gap-2">
+                                                  <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-primary w-[85%]" />
+                                                  </div>
+                                                  <span className="text-[10px] font-black text-primary">85%</span>
+                                                </div>
+                                              </div>
+                                              <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                                                <p className="text-[7px] text-white/30 uppercase font-black mb-1">Moslashuv</p>
+                                                <div className="flex items-center gap-2">
+                                                  <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-[#00A3FF] w-[72%]" />
+                                                  </div>
+                                                  <span className="text-[10px] font-black text-[#00A3FF]">72%</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="absolute top-0 left-0 w-full h-1 bg-primary/20 shadow-[0_0_10px_rgba(204,255,0,0.5)] animate-scan" />
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="flex flex-col gap-4">
                             <button 
                               onClick={() => {
-                                setIsMarathonPlanModalOpen(true);
+                                setGoalsModalParams({ tab: 'new', period: 'Maxsus' });
+                                setIsGoalsModalOpen(true);
                               }}
-                              className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 mt-8 text-white text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                              className="w-full bg-white/5 border border-white/20 border-dashed rounded-[24px] py-5 flex items-center justify-center gap-4 hover:bg-white/10 hover:border-[#ccff00]/50 active:scale-[0.99] transition-all group mt-2"
                             >
-                              To'liq rejani ko'rish
+                              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#ccff00]/20 transition-colors shadow-none group-hover:shadow-[0_0_20px_rgba(204,255,0,0.2)]">
+                                <Plus className="w-6 h-6 text-white/50 group-hover:text-[#ccff00] transition-colors" />
+                              </div>
+                              <div className="text-left flex flex-col">
+                                <span className="text-white text-[14px] font-black tracking-widest uppercase group-hover:text-[#ccff00] transition-colors">Yangi Marafon qo'shish</span>
+                                <span className="text-white/40 text-[10px] font-bold mt-1 uppercase tracking-widest">AI bilan moslashtirilgan reja yarating</span>
+                              </div>
                             </button>
-                          </div>
-
-                          {/* Audio Coach & Weather Modules */}
-                          <div className="grid grid-cols-2 gap-4">
-                            {/* AI Audio Coach Module */}
-                            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 relative overflow-hidden group">
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/20">
-                                  <Headphones className="w-4 h-4 text-primary" />
-                                </div>
-                                <span className="text-[8px] font-black text-primary uppercase tracking-widest animate-pulse">Live</span>
-                              </div>
-                              <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Audio Coach</h4>
-                              <p className="text-white/40 text-[8px] font-bold uppercase mb-4">Real-time motivatsiya</p>
-                              
-                              <div className="flex items-center gap-1 h-8 mb-4">
-                                {[0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4, 0.7, 0.9, 0.5].map((h, i) => (
-                                  <motion.div
-                                    key={i}
-                                    animate={{ 
-                                      height: isSpeaking 
-                                        ? [`${h * 40}%`, `${(1-h) * 100}%`, `${h * 40}%`] 
-                                        : [`${h * 20}%`, `${h * 30}%`, `${h * 20}%`] 
-                                    }}
-                                    transition={{ 
-                                      duration: isSpeaking ? 0.6 : 2, 
-                                      repeat: Infinity, 
-                                      delay: i * 0.05, 
-                                      ease: "easeInOut" 
-                                    }}
-                                    className={cn(
-                                      "flex-1 rounded-full min-w-[2px] transition-colors duration-500",
-                                      isSpeaking ? "bg-primary" : "bg-primary/30"
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                              
-                              <button 
-                                onClick={() => {
-                                  if (!isSpeaking) {
-                                    setIsSpeaking(true);
-                                    speakMotivation();
-                                    // Speech API doest have a robust onEnd in all browsers, so we simulate
-                                    setTimeout(() => setIsSpeaking(false), 4000);
-                                  }
-                                }}
-                                className={cn(
-                                  "w-full py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all",
-                                  isSpeaking ? "bg-white/10 text-white/40 cursor-not-allowed" : "bg-primary text-black"
-                                )}
-                              >
-                                {isSpeaking ? "Eshitilmoqda..." : "Tinglash"}
-                              </button>
-                            </div>
-
-                            {/* Smart Weather Advice Module */}
-                            <div 
-                              onClick={() => setIsWeatherModalOpen(true)}
-                              className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 relative overflow-hidden group cursor-pointer active:scale-95 transition-all"
-                            >
-                              <div className="flex items-center justify-between mb-4">
-                                <div className="w-8 h-8 rounded-xl bg-[#00A3FF]/20 flex items-center justify-center border border-[#00A3FF]/20">
-                                  <Sun className="w-4 h-4 text-[#00A3FF]" />
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <span className="text-white font-black text-xs">24°C</span>
-                                  <span className="text-[7px] font-bold text-white/30 uppercase">Toshkent</span>
-                                </div>
-                              </div>
-                              
-                              <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-1">Ob-havo AI</h4>
-                              
-                              <div className="flex gap-2 mb-3">
-                                <div className="flex-1 bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                                  <Wind className="w-3 h-3 text-[#00A3FF]/60 mb-1" />
-                                  <p className="text-[8px] font-black text-white">12 km/s</p>
-                                </div>
-                                <div className="flex-1 bg-white/[0.03] rounded-lg p-2 border border-white/5">
-                                  <CloudRain className="w-3 h-3 text-[#00A3FF]/60 mb-1" />
-                                  <p className="text-[8px] font-black text-white">0%</p>
-                                </div>
-                              </div>
-
-                              <div className="bg-[#CCFF00]/10 border border-[#CCFF00]/20 rounded-xl p-2">
-                                <p className="text-[8px] text-[#CCFF00] font-black uppercase leading-tight">
-                                  AI Tavsiya: Mashg'ulot uchun ideal!
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* AI Coach Insight Section */}
-                          <div className="relative group">
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] rounded-[32px] blur opacity-20 group-hover:opacity-40 transition-all" />
-                            <div className="relative bg-[#0F0F1B] border border-white/10 rounded-[32px] p-6 overflow-hidden">
-                              <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF005C] to-[#8A2BE2] flex items-center justify-center shadow-lg shadow-[#FF005C]/20">
-                                  <Sparkles className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                  <h4 className="text-white text-sm font-black uppercase tracking-widest">AI Murabbiy Tahlili</h4>
-                                  <p className="text-[#FF005C] text-[8px] font-black uppercase tracking-widest">Premium Insight</p>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-4">
-                                <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                                  <p className="text-[11px] text-white/70 leading-relaxed italic">
-                                    "Oxirgi 3 ta mashg'ulotingizda tempingiz barqarorlashganini ko'ryapman. Bu chidamlilik oshganidan dalolat beradi. Kelasi yugurishda masofani 1.5 km ga ko'paytirishingizni tavsiya qilaman."
-                                  </p>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5">
-                                    <p className="text-[7px] text-white/30 uppercase font-black mb-1">Tiklanish darajasi</p>
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary w-[85%]" />
-                                      </div>
-                                      <span className="text-[10px] font-black text-primary">85%</span>
-                                    </div>
-                                  </div>
-                                  <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5">
-                                    <p className="text-[7px] text-white/30 uppercase font-black mb-1">Sharoitga moslashuv</p>
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full bg-[#00A3FF] w-[72%]" />
-                                      </div>
-                                      <span className="text-[10px] font-black text-[#00A3FF]">72%</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Decorative background scanline */}
-                              <div className="absolute top-0 left-0 w-full h-1 bg-primary/20 shadow-[0_0_10px_rgba(204,255,0,0.5)] animate-scan" />
-                            </div>
                           </div>
                         </div>
                       )}
@@ -8075,38 +8295,81 @@ export default function Profile() {
                   )}
 
                   {activeGoalSubTab === "Mening maqsadlarim" && (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-5">
                       {goals.map((m, idx) => (
-                        <div 
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.1 }}
                           key={m.id} 
                           onClick={() => {
                             setGoalsModalParams({ tab: 'active', period: m.type === 'weekly' ? 'Haftalik' : m.type === 'monthly' ? 'Oylik' : 'Maxsus' });
                             setIsGoalsModalOpen(true);
                           }}
-                          className="flex flex-col gap-3 text-left w-full hover:bg-white/[0.08] cursor-pointer active:scale-[0.98] transition-all"
+                          className="group relative p-5 rounded-[28px] bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-white/10 cursor-pointer active:scale-[0.98] transition-all overflow-hidden"
                         >
-                          <div className="flex justify-between items-end w-full">
-                            <span className="text-white text-[10px] font-black uppercase tracking-[0.15em]">{m.title}</span>
-                            <span className="text-white font-black text-lg">
-                              {m.current} <span className="text-white/40 font-bold text-xs">/ {m.total} {m.unit}</span>
-                            </span>
+                          {/* Background Glow */}
+                          <div 
+                            className="absolute -right-8 -top-8 w-32 h-32 blur-[60px] opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity"
+                            style={{ backgroundColor: m.color }}
+                          />
+                          
+                          <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex gap-4">
+                                <div 
+                                  className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/10 bg-white/5"
+                                  style={{ color: m.color }}
+                                >
+                                  {m.type === 'weekly' ? <TrendingUp className="w-5 h-5" /> : m.type === 'monthly' ? <Timer className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+                                </div>
+                                <div className="flex flex-col justify-center">
+                                  <h4 className="text-white text-xs font-black uppercase tracking-widest mb-1">{m.title}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-3 h-3 text-white/30" />
+                                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{m.timeLeft}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className="block text-xl font-black italic tracking-tighter" style={{ color: m.color }}>{m.progress}%</span>
+                                <span className="text-[8px] font-black uppercase tracking-widest text-white/20">Progress</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[10px] font-black text-white/60">
+                                {m.current} <span className="text-white/30">/ {m.total} {m.unit}</span>
+                              </span>
+                              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/5 border border-white/5">
+                                <Award className="w-2.5 h-2.5 text-yellow-500" />
+                                <span className="text-[8px] font-black uppercase tracking-widest text-yellow-500/80">{m.reward}</span>
+                              </div>
+                            </div>
+
+                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${m.progress}%` }}
+                                transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 + idx * 0.1 }}
+                                className="h-full rounded-full relative"
+                                style={{ 
+                                  backgroundColor: m.color,
+                                  boxShadow: `0 0 15px ${m.color}40` 
+                                }}
+                              >
+                                {/* Shine effect */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]" />
+                              </motion.div>
+                            </div>
                           </div>
-                          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden relative">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${m.progress}%` }}
-                              transition={{ duration: 1.5, ease: "easeOut" }}
-                              className="h-full rounded-full"
-                              style={{ 
-                                backgroundColor: m.color,
-                                boxShadow: `0 0 10px ${m.color}60` 
-                              }}
-                            />
-                          </div>
-                        </div>
+                        </motion.div>
                       ))}
                       {goals.length === 0 && (
-                        <p className="text-center text-white/30 text-xs font-bold uppercase tracking-widest py-8">Maqsadlar mavjud emas</p>
+                        <div className="py-20 text-center flex flex-col items-center gap-4 opacity-40">
+                          <Target className="w-12 h-12 text-white/20" />
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Maqsadlar mavjud emas</p>
+                        </div>
                       )}
                     </div>
                   )}
@@ -8225,7 +8488,11 @@ export default function Profile() {
       {/* Marathon Plan Modal */}
       <MarathonPlanModal 
         isOpen={isMarathonPlanModalOpen} 
-        onClose={() => setIsMarathonPlanModalOpen(false)} 
+        onClose={() => {
+          setIsMarathonPlanModalOpen(false);
+          setSelectedMarathonForPlan(null);
+        }} 
+        marathon={selectedMarathonForPlan}
       />
 
       {/* AI Voice Assistant Setup Modal */}

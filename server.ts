@@ -67,7 +67,7 @@ async function startServer() {
       }
 
       // Fallback to Gemini for STT
-      const geminiSTTModels = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-flash-lite"];
+      const geminiSTTModels = ["gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.1-flash-lite"];
       let sttAttemptError: any = null;
 
       for (const modelName of geminiSTTModels) {
@@ -127,9 +127,89 @@ async function startServer() {
     }
   });
 
+  app.post("/api/generateMarathonPlan", async (req, res) => {
+    const { distance, durationValue, durationUnit, daysPerWeek } = req.body;
+    const now = new Date();
+    const currentDateStr = now.toLocaleDateString('uz-UZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const currentTimeStr = now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+
+    try {
+      const prompt = `Siz jahon darajasidagi professional yugurish murabbiysisiz. Bugun: ${currentDateStr}, Soat: ${currentTimeStr}.
+Foydalanuvchi ${distance} km lik marafon uchun ${durationValue} ${durationUnit} davomida, haftasiga ${daysPerWeek} kun shug'ullanib tayyorlanmoqchi.
+
+Sizning vazifangiz: Jahon yugurish standartlari (World Athletics, VO2 Max training) asosida ilmiy asoslangan, xavfsiz va samarali 1 haftalik REPREZENTATIV reja tuzish.
+
+QA'DIY TALABLAR:
+1. Hamma matnlar O'ZBEK TILIDA bo'lishi shart.
+2. Mashg'ulotlar turi: "DAM" (Rest), "YUGURISH" (Easy Run/Long Run), "HIIT" (Speed work), "YOGA" (Cross-training).
+3. Haftalik reja ichida kamida bitta "Long Run" (uzun masofa) va dam olish kunlari bo'lishi shart.
+4. "aiInsight" qismida marafonchiga xos bo'lgan professional maslahat (masalan: puls zonalari, namlikni saqlash, tiklanish) bering.
+5. Mashg'ulotlarni hozirgi vaqt (${currentDateStr}) va faslni hisobga olgan holda moslashtiring.
+
+JSON formatida javob bering (faqat JSON, markdownsiz).
+JSON tuzilishi:
+{
+  "totalWeeks": number,
+  "weeklySchedule": [ 
+    {
+      "day": "Dush" | "Sesh" | "Chor" | "Pay" | "Jum" | "Shan" | "Yak",
+      "type": "DAM" | "YUGURISH" | "HIIT" | "YOGA",
+      "distance": "masalan, 8 km yoki 45 min",
+      "description": "Mashg'ulot qanday o'tishi haqida professional murabbiylik tavsifi (o'zbekcha)"
+    }
+  ],
+  "aiInsight": "2 ta gapdan iborat professional va ilmiy asoslangan motivatsion maslahat."
+}`;
+      const models = ["gemini-3-flash-preview", "gemini-flash-latest"];
+      let response: any = null;
+      let lastError: any = null;
+      
+      for (const modelName of models) {
+        try {
+          response = await genAI.models.generateContent({
+            model: modelName,
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+          });
+          break; // success
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Model ${modelName} failed, trying next...`);
+        }
+      }
+
+      if (!response) {
+        throw new Error(`Failed with all models: ${lastError?.message}`);
+      }
+      let text = response.text || "{}";
+      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      res.json(JSON.parse(text));
+    } catch (error: any) {
+      console.error("Marathon Plan generation error:", error);
+      res.status(500).json({ error: "Failed to generate plan" });
+    }
+  });
+
   app.post("/api/chat", async (req, res) => {
     const { messages } = req.body;
-    const models = ["gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('uz-UZ', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+    
+    const timeContext = `\n\nJoriy vaqt haqida ma'lumot:\nBugun: ${dateStr}\nSoat: ${timeStr}\n\nSiz doimo foydalanuvchiga joriy vaqt, fasl va vaziyatdan kelib chiqib aniq maslahatlar berishingiz kerak.
+
+Siz shaxsiy AI murabbiy "Mahbuba"siz. 
+Foydalanuvchiga yugurish, marafon va jismoniy tayyorgarlik bo'yicha maslahatlar berasiz.
+
+MUHIM: Agar foydalanuvchi o'z natijalari haqida so'rasa yoki siz natijalarni tahlil qilsangiz, matn oxirida maxsus diagramma teglari orqali zamonaviy grafiklar ko'rsatishingiz mumkin.
+Taqdim etiladigan diagrammalar (Xabarning eng oxirida bittasidan foydalaning):
+- [CHART:distance] - Masofa dinamikasi (Haftalik)
+- [CHART:pace] - Temp dinamikasi (Haftalik)
+- [CHART:heart] - Yurak urish ritmi (BPM)
+- [CHART:hudud] - Hudud egallash dinamikasi (KM2)
+
+Agar jadval haqida gapirsangiz, albatta tegishli [CHART:...] tegini yuboring.`;
+
+    const models = ["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-flash-latest"];
     let lastError: any = null;
 
     for (const modelName of models) {
@@ -137,7 +217,7 @@ async function startServer() {
         // Mapping messages for Gemini
         const geminiMessages = messages.map((m: any) => ({
           role: m.role === 'system' ? 'system' : (m.role === 'model' || m.role === 'assistant' ? 'model' : 'user'),
-          parts: [{ text: m.content || m.text || "" }]
+          parts: [{ text: (m.content || m.text || "") + (m.role === 'system' ? timeContext : "") }]
         }));
 
         // Extract system message
@@ -231,10 +311,11 @@ async function startServer() {
     }
 
     // Gemini TTS Fallback
-    for (let i = 0; i < maxRetries; i++) {
+    const ttsModels = ["gemini-3.1-flash-tts-preview", "gemini-3-flash-preview"];
+    for (const modelName of ttsModels) {
         try {
           const response = await genAI.models.generateContent({
-            model: "gemini-3.1-flash-tts-preview",
+            model: modelName,
             contents: [{ parts: [{ text }] }],
             config: {
               responseModalities: [Modality.AUDIO],
@@ -261,8 +342,7 @@ async function startServer() {
              console.warn("Gemini TTS Quota Exceeded");
              break;
           }
-          console.warn(`Gemini TTS attempt ${i+1} failed:`, geminiErr.message);
-          if (i < maxRetries - 1) await new Promise(r => setTimeout(r, 400));
+          console.warn(`Gemini TTS (${modelName}) failed:`, geminiErr.message);
         }
     }
 
