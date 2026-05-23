@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { Toaster } from "sonner";
 import Login from "./screens/Login";
 import Register from "./screens/Register";
+import Onboarding from "./screens/Onboarding";
 import Feed from "./screens/Feed";
 import Profile from "./screens/Profile";
 import UserProfile from "./screens/UserProfile";
@@ -26,7 +27,7 @@ function StatsPlaceholder() {
 export default function App() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-[#050505] overflow-hidden">
-      <div className="relative h-full w-full max-w-[430px] overflow-hidden bg-surface flex flex-col shadow-2xl">
+      <div className="relative h-full w-full max-w-[430px] overflow-hidden bg-surface flex flex-col shadow-2xl transform-none" style={{ transform: 'translate3d(0,0,0)' }}>
         <Router>
           <Toaster 
             theme="dark" 
@@ -38,6 +39,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/user/:userId" element={<UserProfile />} />

@@ -200,18 +200,21 @@ JSON tuzilishi:
 Siz shaxsiy AI murabbiy "Mahbuba"siz. 
 Foydalanuvchiga yugurish, marafon va jismoniy tayyorgarlik bo'yicha maslahatlar berasiz.
 
-MUHIM: Agar foydalanuvchi o'z natijalari haqida so'rasa yoki siz natijalarni tahlil qilsangiz, matn oxirida maxsus diagramma teglari orqali zamonaviy grafiklar ko'rsatishingiz mumkin.
+MUHIM: Agar foydalanuvchi o'z natijalari (masofa, qadam, temp, puls va hudud) haqida so'rasa yoki siz natijalarni tahlil qilsangiz, matn oxirida maxsus diagramma teglari orqali zamonaviy grafiklar ko'rsatishingiz SHART. 
+O'zingiz matnli diagramma chizmang, faqat quyidagi teglardan foydalaning:
 Taqdim etiladigan diagrammalar (Xabarning eng oxirida bittasidan foydalaning):
-- [CHART:distance] - Masofa dinamikasi (Haftalik)
+- [CHART:distance] - Masofa dinamikasi, kilometrlar (Haftalik)
+- [CHART:steps] - Qadamlar soni dinamikasi (Haftalik)
 - [CHART:pace] - Temp dinamikasi (Haftalik)
 - [CHART:heart] - Yurak urish ritmi (BPM)
 - [CHART:hudud] - Hudud egallash dinamikasi (Haftalik)
 - [CHART:hudud_oy] - Hudud egallash dinamikasi (Oylik)
 - [CHART:hudud_yil] - Hudud egallash dinamikasi (Yillik)
 
-Agar jadval haqida gapirsangiz, albatta tegishli [CHART:...] tegini yuboring.`;
+Foydalanuvchi "necha km", "masofam qanday" desa [CHART:distance], "necha qadam", "qadamlarim" desa [CHART:steps] tegini ishlating.
+Agar jadval yoki statistika haqida gapirsangiz, ALBATTA tegishli [CHART:...] tegini yuboring. O'zingiz chizishga urinmang!`;
 
-    const models = ["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-flash-latest"];
+    const models = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite"];
     let lastError: any = null;
 
     for (const modelName of models) {
@@ -230,8 +233,17 @@ Agar jadval haqida gapirsangiz, albatta tegishli [CHART:...] tegini yuboring.`;
           geminiMessages.splice(systemIdx, 1);
         }
 
-        // Ensure alternating user/model
-        const conversation = geminiMessages.filter((m: any) => m.role === 'user' || m.role === 'model');
+        // Ensure alternating user/model and starts with user
+        let conversation = geminiMessages.filter((m: any) => m.role === 'user' || m.role === 'model');
+        
+        // Gemini requirement: conversation must start with 'user'
+        while (conversation.length > 0 && conversation[0].role !== 'user') {
+          conversation.shift();
+        }
+
+        if (conversation.length === 0) {
+          return res.status(400).json({ error: "Conversation must contain at least one user message." });
+        }
 
         const stream = await genAI.models.generateContentStream({
           model: modelName,
@@ -241,24 +253,37 @@ Agar jadval haqida gapirsangiz, albatta tegishli [CHART:...] tegini yuboring.`;
           }
         });
 
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
+        // Only set headers once we know we can start streaming
+        if (!res.headersSent) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+        }
 
         for await (const chunk of stream) {
-          const dataChunk = {
-            choices: [{
-              delta: {
-                content: chunk.text
-              }
-            }]
-          };
-          res.write(`data: ${JSON.stringify(dataChunk)}\n\n`);
+          const chunkText = chunk.text;
+          if (chunkText) {
+            const dataChunk = {
+              choices: [{
+                delta: {
+                  content: chunkText
+                }
+              }]
+            };
+            res.write(`data: ${JSON.stringify(dataChunk)}\n\n`);
+          }
         }
         res.write("data: [DONE]\n\n");
         return res.end();
       } catch (error: any) {
         lastError = error;
+        // If headers were already sent, we can't reliably try another model
+        if (res.headersSent) {
+          console.error(`Error mid-stream with model ${modelName}:`, error.message);
+          res.write(`data: ${JSON.stringify({ error: "Stream interrupted", details: error.message })}\n\n`);
+          return res.end();
+        }
+        
         const isQuotaError = error.status === 429 || error.statusCode === 429 ||
                             (error.message && (error.message.includes('429') || error.message.includes('quota')));
         
@@ -382,7 +407,7 @@ Agar jadval haqida gapirsangiz, albatta tegishli [CHART:...] tegini yuboring.`;
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = path.join(process.cwd(), "build");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

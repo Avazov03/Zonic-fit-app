@@ -10,6 +10,7 @@ import {
   ChevronRight, Activity, TrendingUp, Heart, Flame, Shield, Award,
   Footprints, Dumbbell, Bike, PersonStanding, Timer, ChevronLeft, Share2,
   Map, Compass, Globe, Crown, Navigation, Filter, Users, Sword, Flag, MessageSquare, Star, LayoutGrid, Info, Hexagon,
+  ArrowRight,
   MoreHorizontal, Plus, Lock, Search, Instagram, Link as LinkIcon,
   Smartphone, Watch, Languages, EyeOff, UserCheck, Link2, Link2Off,
   User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Quote,
@@ -760,6 +761,9 @@ const AIChatModal = ({
   const [isVoiceActive, setIsVoiceActive] = useState(voiceEnabledByDefault || isHandsFree);
   const isListening = assistantState === 'listening_cmd';
 
+  const [isMicDragging, setIsMicDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+
   // Keep state in sync if it changes while open
   useEffect(() => {
     if (voiceEnabledByDefault || isHandsFree) setIsVoiceActive(true);
@@ -888,7 +892,7 @@ const AIChatModal = ({
                 )}>
                   <div>
                     <p>{msg.text.replace(/\[CHART:[^\]]*\]/gi, '').trim()}</p>
-                    {msg.text.includes("[CHART:distance]") && (
+                    {(msg.text.includes("[CHART:distance]") || msg.text.includes("[CHART:km]")) && (
                       <div className="mt-4 p-5 bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden group">
                         <div className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-2">
@@ -911,6 +915,37 @@ const AIChatModal = ({
                             <circle cx="350" cy="40" r="4" fill="#CCFF00" className="animate-pulse" />
                           </svg>
                           <div className="absolute bottom-[-10px] left-0 w-full flex justify-between text-[8px] font-black text-white/20 uppercase tracking-widest px-1">
+                            <span>Du</span><span>Se</span><span>Ch</span><span>Pa</span><span>Ju</span><span>Sh</span><span>Ya</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {msg.text.includes("[CHART:steps]") && (
+                      <div className="mt-4 p-5 bg-white/[0.03] border border-white/10 rounded-3xl overflow-hidden group">
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Kunlik Qadamlar</span>
+                            </div>
+                            <span className="text-[10px] font-black italic text-amber-400">12,450 QADAM</span>
+                        </div>
+                        <div className="h-24 w-full relative">
+                          <div className="flex items-end justify-between h-full px-2 gap-2">
+                            {[60, 45, 85, 40, 95, 75, 55].map((val, idx) => (
+                              <motion.div 
+                                key={idx}
+                                initial={{ height: 0 }}
+                                animate={{ height: `${val}%` }}
+                                transition={{ delay: idx * 0.1, duration: 1, ease: "circOut" }}
+                                className="flex-1 bg-gradient-to-t from-amber-400/20 to-amber-400 rounded-t-xl relative group/bar"
+                              >
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity text-[8px] font-black text-amber-400">
+                                  {val * 150}
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                          <div className="absolute bottom-[-15px] left-0 w-full flex justify-between text-[8px] font-black text-white/20 uppercase tracking-widest px-2">
                             <span>Du</span><span>Se</span><span>Ch</span><span>Pa</span><span>Ju</span><span>Sh</span><span>Ya</span>
                           </div>
                         </div>
@@ -1083,15 +1118,64 @@ const AIChatModal = ({
                     isListening ? "border-primary shadow-[0_0_15px_rgba(204,255,0,0.2)]" : "border-white/10 focus:border-primary/50"
                   )}
                 />
-                <button 
-                  onClick={toggleListening}
+                <motion.button 
+                  drag="x"
+                  dragConstraints={{ left: -120, right: 0 }}
+                  dragElastic={0.1}
+                  dragSnapToOrigin
+                  onDragStart={() => setIsMicDragging(true)}
+                  onDrag={(e, info) => setDragOffset(info.offset.x)}
+                  whileDrag={{ scale: 1.1 }}
+                  onDragEnd={(_, info) => {
+                    setIsMicDragging(false);
+                    setDragOffset(0);
+                    if (info.offset.x < -70) {
+                      setInputText("");
+                      if (isListening) onStopMic();
+                      toast.error("Matn o'chirildi", {
+                        icon: '🗑️',
+                        duration: 1500,
+                        style: {
+                          borderRadius: '16px',
+                          background: '#15151F',
+                          color: '#fff',
+                          border: '1px solid rgba(239, 64, 64, 0.2)',
+                          fontSize: '11px',
+                          fontWeight: 'bold'
+                        }
+                      });
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isMicDragging) toggleListening();
+                  }}
+                  style={{
+                    backgroundColor: dragOffset < -70 ? "#ef4444" : undefined
+                  }}
                   className={cn(
-                    "absolute right-2 top-2 bottom-2 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                    isListening ? "bg-primary text-black" : "bg-white/5 text-white/40 active:scale-90"
+                    "absolute right-2 top-2 bottom-2 w-10 h-10 rounded-xl flex items-center justify-center transition-all z-20",
+                    isListening ? "bg-primary text-black shadow-[0_0_20px_rgba(204,255,0,0.4)]" : "bg-white/5 text-white/40 active:scale-90"
                   )}
                 >
                   <Mic className={cn("w-4 h-4", isListening && "animate-pulse")} />
-                </button>
+                  <AnimatePresence>
+                    {isMicDragging && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: -60 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="absolute right-full mr-4 whitespace-nowrap pointer-events-none"
+                      >
+                        <span className={cn(
+                          "text-[9px] font-black uppercase tracking-widest transition-colors",
+                          dragOffset < -70 ? "text-red-500 animate-bounce" : "text-primary/40"
+                        )}>
+                          {dragOffset < -70 ? "Qo'yib yuboring" : "← O'chirish uchun suring"}
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
               </div>
               <button 
                 onClick={() => {
@@ -2392,9 +2476,13 @@ const ClanChatModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                     {msg.image && (
                       <img src={msg.image} alt="Sent" className="w-full rounded-xl mb-2 object-cover max-h-60" referrerPolicy="no-referrer" />
                     )}
-                    {msg.text.includes("[CHART:distance]") ? (
+                    {(msg.text.includes("[CHART:distance]") || msg.text.includes("[CHART:km]")) ? (
                       <div className="mt-2 h-24 w-full">
                         <TacticalSparkline data={STATS_CARDS[0].chartData} color={STATS_CARDS[0].color} />
+                      </div>
+                    ) : msg.text.includes("[CHART:steps]") ? (
+                      <div className="mt-2 h-24 w-full">
+                        <TacticalSparkline data={[{value: 8000}, {value: 9500}, {value: 11000}, {value: 7000}, {value: 12450}]} color="#FBBF24" />
                       </div>
                     ) : msg.text.includes("[CHART:pace]") ? (
                       <div className="mt-2 h-24 w-full">
@@ -3297,108 +3385,59 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; o
   );
 };
 
-const BodyMetricsModal = ({ 
-  isOpen, 
-  onClose, 
-  activeMetric, 
-  bodyMetrics, 
-  onUpdate 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  activeMetric: 'weight' | 'height' | 'age';
-  bodyMetrics: any;
+const ConfigSelectModal = ({
+  isOpen,
+  onClose,
+  activeConfig,
+  userData,
+  onUpdate
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  activeConfig: 'location' | 'gender' | 'level' | 'country';
+  userData: any;
   onUpdate: (newData: any) => void;
 }) => {
-  const [value, setValue] = useState(bodyMetrics[activeMetric]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const [value, setValue] = useState(userData[activeConfig]);
 
-  // Update local state when metric changes
   React.useEffect(() => {
-    setValue(bodyMetrics[activeMetric]);
-  }, [activeMetric, bodyMetrics]);
+    setValue(userData[activeConfig]);
+  }, [activeConfig, userData]);
 
-  const getRange = () => {
-    switch(activeMetric) {
-      case 'weight': return { min: 30, max: 200 };
-      case 'height': return { min: 100, max: 250 };
-      case 'age': return { min: 5, max: 100 };
-    }
-  };
-  const range = getRange();
+  const COUNTRIES = [
+    "O'zbekiston", "Qozog'iston", "Qirg'iziston", "Tojikiston", "Turkmaniston", 
+    "Rossiya", "Boshqa davlatlar"
+  ];
 
-  // Scroll to initial value when modal opens
-  React.useEffect(() => {
-    if (isOpen && scrollRef.current) {
-      setTimeout(() => {
-        if (scrollRef.current) {
-          const index = value - range.min;
-          scrollRef.current.scrollLeft = index * 32;
-        }
-      }, 50);
-    }
-  }, [isOpen, activeMetric]);
-
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const index = Math.round(scrollRef.current.scrollLeft / 32);
-    const newVal = range.min + index;
-    if (newVal >= range.min && newVal <= range.max && newVal !== value) {
-      setValue(newVal);
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.pageX - (scrollRef.current?.offsetLeft || 0));
-    setScrollLeft(scrollRef.current?.scrollLeft || 0);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    if (scrollRef.current) {
-      const index = Math.round(scrollRef.current.scrollLeft / 32);
-      scrollRef.current.scrollTo({
-        left: index * 32,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5; 
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
+  const REGIONS = [
+    "Toshkent shahri", "Toshkent viloyati", "Samarqand viloyati", "Buxoro viloyati", 
+    "Farg'ona viloyati", "Andijon viloyati", "Namangan viloyati", 
+    "Qashqadaryo viloyati", "Surxondaryo viloyati", "Xorazm viloyati", 
+    "Navoiy viloyati", "Sirdaryo viloyati", "Jizzax viloyati", 
+    "Qoraqalpog'iston Resp."
+  ];
 
   const handleSave = () => {
-    onUpdate({ ...bodyMetrics, [activeMetric]: value });
+    onUpdate({ ...userData, [activeConfig]: value });
     toast.success("Ma'lumotlar saqlandi");
     onClose();
   };
 
   const getTitle = () => {
-    switch(activeMetric) {
-      case 'weight': return "Vaznni o'zgartirish";
-      case 'height': return "Bo'yni o'zgartirish";
-      case 'age': return "Yoshni o'zgartirish";
+    switch(activeConfig) {
+      case 'country': return "Davlatni o'zgartirish";
+      case 'location': return "Hududni o'zgartirish";
+      case 'gender': return "Jinsni o'zgartirish";
+      case 'level': return "Tajribani o'zgartirish";
     }
   };
 
-  const getUnit = () => {
-    switch(activeMetric) {
-      case 'weight': return "kg";
-      case 'height': return "cm";
-      case 'age': return "yosh";
+  const getDesc = () => {
+    switch(activeConfig) {
+      case 'country': return "Yashash davlatingizni belgilang";
+      case 'location': return "Yashash hududingizni belgilang";
+      case 'gender': return "Jinsingizni tanlang";
+      case 'level': return "Mashg'ulot darajangizni belgilang";
     }
   };
 
@@ -3418,90 +3457,103 @@ const BodyMetricsModal = ({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="absolute inset-x-0 bottom-0 bg-[#0A0A0A] border-t border-white/10 rounded-t-[40px] z-[251] overflow-hidden shadow-[0_-20px_80px_rgba(0,0,0,0.8)] p-8 pb-12"
+            className="absolute inset-x-0 bottom-0 bg-[#0A0A0A] border-t border-white/10 rounded-t-[40px] z-[251] shadow-[0_-20px_80px_rgba(0,0,0,0.8)] p-8 pb-12 overflow-hidden flex flex-col max-h-[85vh]"
           >
-            <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-8" />
+            <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-8 shrink-0" />
             
-            <div className="flex items-center justify-between mb-12">
+            <div className="flex items-center justify-between mb-8 shrink-0">
               <div>
                 <h2 className="text-2xl font-black uppercase tracking-tighter text-white">{getTitle()}</h2>
-                <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-1">Aniq ko'rsatkichni belgilang</p>
+                <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-1">{getDesc()}</p>
               </div>
               <button 
                 onClick={onClose} 
-                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-all"
+                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-all shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex flex-col items-center mb-12">
-              <div className="flex items-baseline gap-2 mb-8">
-                <motion.span 
-                  key={value}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-7xl font-black text-primary tracking-tighter"
-                >
-                  {value}
-                </motion.span>
-                <span className="text-xl font-black text-white/20 uppercase tracking-widest">{getUnit()}</span>
-              </div>
-
-              {/* Ruler-style Slider */}
-              <div className="w-full relative py-8">
-                <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-primary z-10 shadow-[0_0_8px_rgba(204,255,0,0.5)] rounded-full -translate-x-1/2" />
-                <div 
-                  ref={scrollRef}
-                  onScroll={handleScroll}
-                  onMouseDown={handleMouseDown}
-                  onMouseLeave={handleMouseLeave}
-                  onMouseUp={handleMouseUp}
-                  onMouseMove={handleMouseMove}
-                  className={cn(
-                    "overflow-x-auto no-scrollbar flex items-end py-4 cursor-grab active:cursor-grabbing",
-                    !isDragging && "snap-x snap-mandatory"
-                  )}
-                >
-                  <div className="w-[calc(50%-16px)] shrink-0" />
-                  {Array.from({ length: range.max - range.min + 1 }).map((_, i) => {
-                    const currentVal = range.min + i;
-                    const isMajor = currentVal % 5 === 0;
-                    const isSelected = currentVal === value;
-
-                    return (
-                      <div 
-                        key={i} 
-                        onClick={() => {
-                          setValue(currentVal);
-                          if (scrollRef.current) {
-                            scrollRef.current.scrollTo({ left: i * 32, behavior: 'smooth' });
-                          }
-                        }}
-                        className="flex flex-col items-center justify-end shrink-0 w-8 h-24 snap-center"
-                      >
-                        <div className={cn(
-                          "transition-all duration-300 rounded-full",
-                          isMajor ? "w-1 h-12 bg-white/40" : "w-0.5 h-6 bg-white/10",
-                          isSelected && "bg-primary h-16 w-1.5"
-                        )} />
-                        {isMajor && (
-                          <span className={cn(
-                            "text-[10px] font-black mt-3 transition-colors",
-                            isSelected ? "text-primary" : "text-white/20"
-                          )}>
-                            {currentVal}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <div className="w-[calc(50%-16px)] shrink-0" />
+            <div className="flex-1 overflow-y-auto no-scrollbar mb-8 -mx-4 px-4 py-2">
+              {activeConfig === 'country' && (
+                <div className="flex flex-col gap-2">
+                  {COUNTRIES.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setValue(c)}
+                      className={cn(
+                        "w-full text-left px-5 py-4 rounded-2xl transition-all font-black uppercase tracking-widest text-xs flex items-center justify-between",
+                        value === c
+                          ? "bg-primary text-black shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                          : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <span>{c}</span>
+                      {value === c && <Globe className="w-4 h-4 ml-2" />}
+                    </button>
+                  ))}
                 </div>
-              </div>
+              )}
+              {activeConfig === 'location' && (
+                <div className="flex flex-col gap-2">
+                  {REGIONS.map(region => (
+                    <button
+                      key={region}
+                      onClick={() => setValue(region)}
+                      className={cn(
+                        "w-full text-left px-5 py-4 rounded-2xl transition-all font-black uppercase tracking-widest text-xs flex items-center justify-between",
+                        value === region
+                          ? "bg-primary text-black shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                          : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <span>{region}</span>
+                      {value === region && <MapPin className="w-4 h-4 ml-2" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {activeConfig === 'gender' && (
+                <div className="grid grid-cols-1 gap-3">
+                  {(['Erkak', 'Ayol']).map((gen) => (
+                    <button
+                      key={gen}
+                      onClick={() => setValue(gen)}
+                      className={cn(
+                        "w-full px-5 py-6 rounded-2xl transition-all font-black uppercase tracking-widest text-sm flex flex-col items-center justify-center gap-2",
+                        value === gen
+                          ? "bg-primary text-black shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                          : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <User className="w-8 h-8" />
+                      <span>{gen}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {activeConfig === 'level' && (
+                <div className="grid grid-cols-1 gap-3">
+                  {(["Boshlang'ich", "Professional"]).map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => setValue(lvl)}
+                      className={cn(
+                        "w-full px-5 py-6 rounded-2xl transition-all font-black uppercase tracking-widest text-sm flex flex-col items-center justify-center gap-2",
+                        value === lvl
+                          ? "bg-primary text-black shadow-[0_0_20px_rgba(204,255,0,0.2)]"
+                          : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <Zap className="w-8 h-8" />
+                      <span>{lvl}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 shrink-0">
               <button 
                 onClick={onClose}
                 className="py-5 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 active:scale-95 transition-all"
@@ -3510,9 +3562,231 @@ const BodyMetricsModal = ({
               </button>
               <button 
                 onClick={handleSave}
-                className="py-5 rounded-2xl bg-primary text-black font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_10px_30px_rgba(204,255,0,0.3)] active:scale-95 transition-all"
+                className="py-5 rounded-2xl bg-primary text-black font-black uppercase tracking-[0.2em] text-[10px] shadow-[0_10px_30px_rgba(204,255,0,0.3)] active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 Tasdiqlash
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const BodyMetricsModal = ({ 
+  isOpen, 
+  onClose, 
+  activeMetric, 
+  bodyMetrics, 
+  onUpdate 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  activeMetric: 'weight' | 'height' | 'age';
+  bodyMetrics: any;
+  onUpdate: (newData: any) => void;
+}) => {
+  const [currentMetric, setCurrentMetric] = useState<'weight' | 'height' | 'age'>(activeMetric);
+  const [value, setValue] = useState(bodyMetrics[activeMetric]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync with initial activeMetric when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setCurrentMetric(activeMetric);
+      setValue(bodyMetrics[activeMetric]);
+    }
+  }, [isOpen, activeMetric, bodyMetrics]);
+
+  // Update value when currentMetric changes
+  React.useEffect(() => {
+    setValue(bodyMetrics[currentMetric]);
+  }, [currentMetric, bodyMetrics]);
+
+  const getRange = () => {
+    switch(currentMetric) {
+      case 'weight': return { min: 30, max: 200, step: 1 };
+      case 'height': return { min: 100, max: 250, step: 1 };
+      case 'age': return { min: 5, max: 100, step: 1 };
+    }
+  };
+  const range = getRange();
+  const items = Array.from({ length: range.max - range.min + 1 }).map((_, i) => range.min + i);
+
+  const ITEM_HEIGHT = 50;
+
+  // Initial scroll positioning and on category switch
+  React.useEffect(() => {
+    if (isOpen && scrollRef.current) {
+      const index = items.indexOf(value);
+      if (index !== -1) {
+        const timer = setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = index * ITEM_HEIGHT;
+          }
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isOpen, currentMetric]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const index = Math.round(scrollTop / ITEM_HEIGHT);
+    const newValue = items[index];
+    if (newValue !== undefined && newValue !== value) {
+      setValue(newValue);
+    }
+  };
+
+  const handleSave = () => {
+    onUpdate({ ...bodyMetrics, [currentMetric]: value });
+    toast.success("Ma'lumotlar saqlandi", {
+      style: {
+        borderRadius: '16px',
+        background: '#fff',
+        color: '#000',
+        fontWeight: 'bold'
+      }
+    });
+    onClose();
+  };
+
+  const getTitle = () => {
+    switch(currentMetric) {
+      case 'weight': return "Vazningiz";
+      case 'height': return "Bo'yingiz";
+      case 'age': return "Yoshingiz";
+    }
+  };
+
+  const getSubtitle = () => {
+    switch(currentMetric) {
+      case 'weight': return "Vazningizni kiriting, har bir gramm muhim";
+      case 'height': return "Bo'yingizni aniq belgilang";
+      case 'age': return "Yoshingizni kiriting va natijani ko'ring";
+    }
+  };
+
+  const getUnit = () => {
+    switch(currentMetric) {
+      case 'weight': return "kg";
+      case 'height': return "cm";
+      case 'age': return "yosh";
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[250]"
+          />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute inset-x-0 bottom-0 bg-[#0A0A0A] border-t border-white/5 rounded-t-[40px] z-[251] shadow-[0_-20px_80px_rgba(0,0,0,0.8)] flex flex-col max-h-[85vh] overflow-hidden"
+          >
+            {/* Handle Bar */}
+            <div className="w-12 h-1 bg-white/10 rounded-full mx-auto my-4 shrink-0" />
+            
+            {/* Header Content */}
+            <div className="px-8 pt-4 pb-0 text-center shrink-0">
+              <h2 className="text-2xl font-black uppercase tracking-tighter text-white">{getTitle()}</h2>
+              <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-1">{getSubtitle()}</p>
+            </div>
+
+            {/* Segmented Picker (Functional Category Switcher) */}
+            <div className="px-8 mt-6 shrink-0 relative z-10">
+               <div className="bg-white/5 p-1 rounded-2xl flex relative h-12 border border-white/5 overflow-hidden">
+                  {(['age', 'height', 'weight'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setCurrentMetric(m)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center text-[9px] font-black uppercase tracking-widest z-10 transition-colors duration-300 relative",
+                        currentMetric === m ? "text-black" : "text-white/30 hover:text-white/60"
+                      )}
+                    >
+                      {m === 'weight' ? 'Vazn' : m === 'height' ? "Bo'y" : 'Yosh'}
+                    </button>
+                  ))}
+                  <motion.div 
+                    layoutId="activeMetricSelection"
+                    animate={{ 
+                      x: currentMetric === 'age' ? '0%' : currentMetric === 'height' ? '100%' : '200%' 
+                    }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    className="absolute inset-y-1 left-1 w-[calc(33.33%-4px)] bg-primary rounded-[14px] shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+                  />
+               </div>
+            </div>
+
+            {/* Wheel Picker Section */}
+            <div className="relative flex flex-col items-center justify-center py-6 flex-1 min-h-[300px]">
+              {/* Central Selection Bar Overlay */}
+              <div className="absolute left-6 right-6 h-[60px] bg-primary/10 rounded-2xl -mt-[30px] top-[150px] pointer-events-none border border-primary/20 shadow-[0_0_40px_rgba(204,255,0,0.05)]" />
+              
+              <div 
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="w-full h-[250px] overflow-y-auto no-scrollbar snap-y snap-mandatory relative"
+              >
+                {/* Scroll Padding */}
+                <div className="h-[100px]" />
+                
+                {items.map((item) => {
+                  const isSelected = item === value;
+                  return (
+                    <div 
+                      key={item}
+                      className={cn(
+                        "h-[50px] flex items-center justify-center transition-all duration-300 snap-center",
+                        isSelected ? "scale-150 font-black" : "opacity-20 blur-[1px]"
+                      )}
+                    >
+                      <span className={cn(
+                        "text-3xl tracking-tighter transition-colors",
+                        isSelected ? "text-primary drop-shadow-[0_0_10px_rgba(204,255,0,0.3)]" : "text-white"
+                      )}>
+                        {item}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Scroll Padding */}
+                <div className="h-[100px]" />
+              </div>
+            </div>
+
+            {/* Stats/Summary Bar */}
+            <div className="px-8 mb-6 shrink-0">
+               <div className="bg-gradient-to-br from-primary/10 via-white/[0.02] to-primary/5 rounded-[32px] p-6 border border-primary/10 flex flex-col items-center shadow-lg">
+                  <div className="text-[10px] font-black text-primary/40 uppercase tracking-[0.3em] mb-1">Mavjud Ko'rsatkich</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-white tracking-tighter">{value}</span>
+                    <span className="text-xs font-black text-white/30 uppercase tracking-widest">{getUnit()}</span>
+                  </div>
+               </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="px-8 pt-2 pb-12 shrink-0">
+              <button 
+                onClick={handleSave}
+                className="w-full h-16 bg-primary text-black rounded-3xl font-black text-sm uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(204,255,0,0.2)] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group"
+              >
+                <span>Ma'lumotni Saqlash</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </motion.div>
@@ -3541,6 +3815,9 @@ const EditProfileModal = ({
   const [badge, setBadge] = useState(userData.badge);
   const [avatar, setAvatar] = useState(userData.avatar);
   const [cover, setCover] = useState(userData.cover);
+  const [gender, setGender] = useState(userData.gender || "Erkak");
+  const [level, setLevel] = useState(userData.level || "Boshlang'ich");
+  const [country, setCountry] = useState(userData.country || "O'zbekiston");
 
   // Cropping State
   const [cropModal, setCropModal] = useState<{
@@ -3639,7 +3916,7 @@ const EditProfileModal = ({
   ].filter(a => a.isUnlocked);
 
   const handleSave = () => {
-    onUpdate({ name, location, bio, instagram, strava, badge, avatar, cover });
+    onUpdate({ name, location, bio, instagram, strava, badge, avatar, cover, gender, level, country });
     toast.success("Profil muvaffaqiyatli yangilandi");
     onClose();
   };
@@ -3725,6 +4002,109 @@ const EditProfileModal = ({
                           className="w-full h-16 bg-white/[0.03] border border-white/10 rounded-2xl pl-14 pr-6 text-sm font-bold focus:outline-none focus:border-primary/50 focus:bg-white/[0.05] transition-all"
                           placeholder="Ismingizni kiriting"
                         />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] px-2">Davlat (Country)</label>
+                      <div className="relative group">
+                        <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
+                        <select
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                          className="w-full h-16 bg-white/[0.03] border border-white/10 rounded-2xl pl-14 pr-6 text-sm font-bold focus:outline-none focus:border-primary/50 focus:bg-white/[0.05] transition-all appearance-none outline-none"
+                        >
+                          {[
+                            "O'zbekiston", "Qozog'iston", "Qirg'iziston", "Tojikiston", "Turkmaniston", 
+                            "Rossiya", "Boshqa davlatlar"
+                          ].map(c => (
+                            <option key={c} value={c} className="bg-[#1a1a1a] text-white">
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 rotate-90 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] px-2">Hudud (Location)</label>
+                      <div className="relative group">
+                        <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
+                        <select
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          className="w-full h-16 bg-white/[0.03] border border-white/10 rounded-2xl pl-14 pr-6 text-sm font-bold focus:outline-none focus:border-primary/50 focus:bg-white/[0.05] transition-all appearance-none outline-none"
+                        >
+                          {[
+                            "Toshkent shahri", "Toshkent viloyati", "Samarqand viloyati", "Buxoro viloyati", 
+                            "Farg'ona viloyati", "Andijon viloyati", "Namangan viloyati", 
+                            "Qashqadaryo viloyati", "Surxondaryo viloyati", "Xorazm viloyati", 
+                            "Navoiy viloyati", "Sirdaryo viloyati", "Jizzax viloyati", 
+                            "Qoraqalpog'iston Resp."
+                          ].map(region => (
+                            <option key={region} value={region} className="bg-[#1a1a1a] text-white">
+                              {region}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 rotate-90 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] px-2">Jins</label>
+                        <div className="flex bg-white/5 p-1 rounded-2xl relative z-10 w-full overflow-hidden h-16 border border-white/10">
+                          {(["Erkak", "Ayol"] as const).map(tab => (
+                            <button
+                              key={tab}
+                              type="button"
+                              onClick={() => setGender(tab)}
+                              className={cn(
+                                "flex-1 relative flex flex-col items-center justify-center transition-colors duration-300 rounded-xl",
+                                gender === tab ? "text-black" : "text-white/40 hover:text-white"
+                              )}
+                            >
+                              {gender === tab && (
+                                <motion.div
+                                  layoutId="genderTabEdit"
+                                  className="absolute inset-0 bg-primary shadow-[0_0_15px_rgba(204,255,0,0.3)] z-[-1]"
+                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                  style={{ borderRadius: 12 }}
+                                />
+                              )}
+                              <span className="text-[10px] font-black uppercase tracking-widest relative z-10">{tab}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] px-2">Tajriba</label>
+                        <div className="flex bg-white/5 p-1 rounded-2xl relative z-10 w-full overflow-hidden h-16 border border-white/10">
+                          {(["Boshlang'ich", "Professional"] as const).map(tab => (
+                            <button
+                              key={tab}
+                              type="button"
+                              onClick={() => setLevel(tab)}
+                              className={cn(
+                                "flex-1 relative flex flex-col items-center justify-center transition-colors duration-300 rounded-xl",
+                                level === tab ? "text-black" : "text-white/40 hover:text-white"
+                              )}
+                            >
+                              {level === tab && (
+                                <motion.div
+                                  layoutId="levelTabEdit"
+                                  className="absolute inset-0 bg-primary shadow-[0_0_15px_rgba(204,255,0,0.3)] z-[-1]"
+                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                  style={{ borderRadius: 12 }}
+                                />
+                              )}
+                              <span className="text-[9px] font-black uppercase tracking-widest relative z-10">{tab === "Boshlang'ich" ? "Boshlang" : "Pro"}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -4131,10 +4511,87 @@ const NEWS_ITEMS = [
   { id: 3, text: "Siz 'Yunusobod Qiroli' unvonini qo'lga kiritdingiz. Tabriklaymiz!", icon: <Award className="w-3 h-3 text-yellow-500" /> },
 ];
 
+const SafeMap = ({ children, id, ...props }: any) => {
+  // Use a completely fresh key each time it mounts to avoid Leaflet container reuse errors
+  const [mountKey] = useState(() => Math.random().toString(36).substring(7));
+
+  return (
+    <div key={`wrapper-${mountKey}`} style={{ height: '100%', width: '100%', position: 'relative', zIndex: 0 }}>
+      <MapContainer key={`map-${mountKey}`} {...props}>
+        {children}
+      </MapContainer>
+    </div>
+  );
+};
+
+const FullMapModal = ({ isOpen, onClose, card }: { isOpen: boolean, onClose: () => void, card: any }) => {
+  const center = [41.2995, 69.2401] as [number, number]; // Default to Tashkent or something similar
+
+  return (
+    <AnimatePresence>
+      {(isOpen && card) && (
+        <motion.div 
+          key="full-map-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex justify-center items-center px-4 py-8"
+        >
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="w-full max-w-[500px] h-[80vh] bg-[#0A0A0F] border border-white/10 rounded-[30px] overflow-hidden flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+          >
+            {/* Close Button */}
+            <button 
+              onClick={onClose}
+              className="absolute top-4 right-4 z-[999] w-10 h-10 bg-black/40 backdrop-blur-md hover:bg-white/10 transition-colors rounded-full border border-white/10 flex items-center justify-center text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Map */}
+            <div className="flex-1 relative z-0">
+               <SafeMap id={card.id} center={center} zoom={13} style={{ height: '100%', width: '100%', borderRadius: '0px' }} className="!z-0 outline-none" attributionControl={false}>
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  />
+               </SafeMap>
+            </div>
+            
+            {/* Details Bar Overlaid on Map */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 pt-12 bg-gradient-to-t from-[#0A0A0F] via-[#0A0A0F]/80 to-transparent z-10 pointer-events-none">
+            <div className="pointer-events-auto bg-white/[0.03] backdrop-blur-md rounded-[20px] border border-white/10 p-5 transform translate-y-2">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: card.color || '#CCFF00', color: card.color || '#CCFF00' }} />
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">{card.hudud}</h2>
+              </div>
+              <div className="flex justify-between items-end mt-4">
+                <div>
+                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">Sana</p>
+                  <p className="text-sm font-bold text-white">{card.date}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-1">Masofa</p>
+                  <p className="text-xl font-display-metrics font-black text-primary leading-none">{card.distance} <span className="text-xs uppercase">{card.unit}</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 const SwipeableHistoryCards = ({ activities }: { activities: any[] }) => {
   const [cards, setCards] = useState(activities);
   const [exitingCard, setExitingCard] = useState<{ id: number, dir: number } | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [fullMapCard, setFullMapCard] = useState<any>(null);
 
   useEffect(() => {
     setCards(activities);
@@ -4227,8 +4684,8 @@ const SwipeableHistoryCards = ({ activities }: { activities: any[] }) => {
                   layout
                   key={card.id}
                   className={cn(
-                    "bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-[24px] border border-white/5 shadow-2xl p-6 flex flex-col justify-between origin-top",
-                    isExpanded ? "w-full min-h-[160px]" : "absolute inset-x-0 top-0 h-[180px]"
+                    "bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-[24px] border border-white/5 shadow-2xl p-6 flex flex-col justify-between origin-top relative overflow-hidden",
+                    isExpanded ? "w-full min-h-[160px]" : "absolute inset-x-0 top-0 h-[190px]"
                   )}
                   animate={{
                      x: animateX,
@@ -4245,15 +4702,35 @@ const SwipeableHistoryCards = ({ activities }: { activities: any[] }) => {
                   whileDrag={isFront ? { scale: 1.02, cursor: "grabbing" } : {}}
                   style={(isExiting || opacity === 0 && !isExpanded) ? { pointerEvents: 'none' } : {}}
                >
-                  {/* Top Row: Hudud and Date */}
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  {/* Miniature Web-Map Button - absolute positioned to prevent stretching layout */}
+                  <div 
+                    className="absolute top-5 right-5 w-[82px] h-[82px] rounded-[16px] overflow-hidden border border-white/10 cursor-pointer pointer-events-auto hover:border-primary/50 hover:shadow-[0_0_20px_rgba(204,255,0,0.2)] transition-all group z-50 shadow-md bg-[#0A0A0F]"
+                    onClick={() => setFullMapCard(card)}
+                  >
+                     <div 
+                        className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:scale-110" 
+                        style={{ 
+                          backgroundImage: 'url("https://a.basemaps.cartocdn.com/dark_all/12/2928/1531.png")', 
+                          backgroundSize: 'cover', 
+                          backgroundPosition: 'center' 
+                        }} 
+                     />
+                    <div className="absolute inset-0 bg-transparent group-hover:bg-primary/20 transition-all z-[400] flex items-center justify-center pointer-events-none">
+                      <div className="w-7 h-7 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform scale-75 group-hover:scale-100 duration-300 pointer-events-auto shadow-lg border border-white/10">
+                         <MapPin className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top Row: Hudud, Date */}
+                  <div className="flex items-start mb-4">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mt-1 relative z-10">
                       <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: card.color || '#CCFF00' }} />
                       <span className="text-[10px] font-black uppercase tracking-widest text-white">{card.hudud}</span>
+                      <span className="text-[10px] font-bold text-white/40 tracking-widest pl-2 border-l border-white/10">
+                        {card.date}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-bold text-white/40 tracking-widest">
-                      {card.date}
-                    </span>
                   </div>
                   
                   {/* Center Row: Main Stats */}
@@ -4292,6 +4769,13 @@ const SwipeableHistoryCards = ({ activities }: { activities: any[] }) => {
       >
         {isExpanded ? "Yig'ish" : "Yana yuklash"}
       </motion.button>
+
+      {/* Full Map Modal */}
+      <FullMapModal 
+        isOpen={!!fullMapCard} 
+        onClose={() => setFullMapCard(null)} 
+        card={fullMapCard} 
+      />
     </div>
   )
 };
@@ -4326,19 +4810,18 @@ export default function Profile() {
     }
   }, []);
   
-  const [activitySort, setActivitySort] = useState<'recent' | 'distance' | 'steps'>('recent');
-  const [isActivityFilterOpen, setIsActivityFilterOpen] = useState(false);
+  const [activityFilterTab, setActivityFilterTab] = useState<"Yugurish" | "Hudud" | "Qadam">("Yugurish");
 
   const sortedActivities = useMemo(() => {
     const data = [...ACTIVITY_DATA];
-    if (activitySort === 'distance') {
+    if (activityFilterTab === 'Hudud') {
       return data.sort((a, b) => parseFloat(b.distance) - parseFloat(a.distance));
     }
-    if (activitySort === 'steps') {
+    if (activityFilterTab === 'Qadam') {
       return data.sort((a, b) => parseInt(b.steps) - parseInt(a.steps));
     }
     return data;
-  }, [activitySort]);
+  }, [activityFilterTab]);
 
   const [notifications, setNotifications] = useState([
     { id: 1, type: "chat", title: "Yangi Suhbat!", desc: "ZONIC klan chatida yangi suhbat boshlandi. Jamoangiz sizni kutmoqda!", time: "Hozir", icon: <MessageSquare className="w-4 h-4 text-primary" />, color: "bg-primary/10 border-primary/20" },
@@ -4366,7 +4849,7 @@ export default function Profile() {
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [activeGoalSubTab, setActiveGoalSubTab] = useState("AI Marafon Rejalari");
   const [expandedMarathonId, setExpandedMarathonId] = useState<number | null>(null);
-  const [activityTab, setActivityTab] = useState<"KM" | "HUDUD" | "QADAM">("KM");
+  const [activityTab, setActivityTab] = useState<"Yugurish" | "Hudud" | "Qadam">("Yugurish");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [isMarathonPlanModalOpen, setIsMarathonPlanModalOpen] = useState(false);
@@ -4394,6 +4877,7 @@ export default function Profile() {
   const blobQueue = useRef<{url: string, text: string}[]>([]);
   const isPlayingAudio = useRef(false);
   const isPrefetching = useRef(false);
+  const constraintsRef = useRef(null);
 
   const prefetchNext = async () => {
     if (isPrefetching.current || audioQueue.current.length === 0) return;
@@ -5063,11 +5547,12 @@ export default function Profile() {
 
           MUHIM KO'RSATMA:
           1. ISMINGIZ MAHBUBA. Har doim samimiy, latofatli va dalda beruvchi bo'ling.
-          2. DIAGRAMMALAR: Agar foydalanuvchi diagramma yoki statistik grafik so'rasa, javobingiz oxiriga mos keluvchi [CHART:distance], [CHART:pace], [CHART:heart] yoki [CHART:area] kalit so'zlarini qo'shing.
-          3. NUTQ VA MA'NO: Foydalanuvchi gapirayotganda so'zlarni noto'g'ri talaffuz qilsa yoki jumlalar chala bo'lsa ham, mantiqan uning ASL MAQSADINI sezib, shunga mos javob bering. Xatolarni to'g'irlab tushunish sizning kuchli tomoningiz.
-          4. Foydalanuvchining ahvolini, gapirayotgan kontekstini (mashg'ulot payti, charchoq, hursandchilik) chuqur tahlil qiling. 
-          5. Yutuqlarni so'raganda FAQAT bugungacha bo'lgan natijalarni ayting. Kelajakni bashorat qilmang.
-          6. O'zbek tilida juda samimiy, do'stona va professional javob bering.
+          2. DIAGRAMMALAR: Agar foydalanuvchi diagramma yoki statistik grafik so'rasa, javobingiz oxiriga mos keluvchi [CHART:distance], [CHART:steps], [CHART:pace], [CHART:heart] yoki [CHART:area] kalit so'zlarini qo'shing. O'zingiz rasm yoki diagramma chizoʻmang, faqat teg yuboring.
+          3. KM VA QADAMLAR: "Necha km", "Masofa" so'ralsa [CHART:distance], "Necha qadam", "Qadamlarim" so'ralsa [CHART:steps] tegini ALBATTA ishlating.
+          4. NUTQ VA MA'NO: Foydalanuvchi gapirayotganda so'zlarni noto'g'ri talaffuz qilsa yoki jumlalar chala bo'lsa ham, mantiqan uning ASL MAQSADINI sezib, shunga mos javob bering. Xatolarni to'g'irlab tushunish sizning kuchli tomoningiz.
+          5. Foydalanuvchining ahvolini, gapirayotgan kontekstini (mashg'ulot payti, charchoq, hursandchilik) chuqur tahlil qiling. 
+          6. Yutuqlarni so'raganda FAQAT bugungacha bo'lgan natijalarni ayting. Kelajakni bashorat qilmang.
+          7. O'zbek tilida juda samimiy, do'stona va professional javob bering.
 
           MULOQOT USLUBI (PHONETIC & SPEECH OPTIMIZED):
           1. Sof, ravon va aqlli o'zbek tilida gapiring. Imlo xatolariga yo'l qo'ymang.
@@ -5383,6 +5868,8 @@ export default function Profile() {
 
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isBodyMetricsModalOpen, setIsBodyMetricsModalOpen] = useState(false);
+  const [isConfigSelectModalOpen, setIsConfigSelectModalOpen] = useState(false);
+  const [activeConfig, setActiveConfig] = useState<'location' | 'gender' | 'level' | 'country'>('location');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<any>(null);
@@ -5559,13 +6046,16 @@ export default function Profile() {
 
   const [userData, setUserData] = useState({
     name: "AVAZOV OG'ABEK",
-    location: "ZONIC jamoasi a'zosi",
+    country: "O'zbekiston",
+    location: "Toshkent shahri",
     avatar: "/badges/avazov.JPG",
     cover: "/badges/100623811.jpg",
     bio: "Maqsad: Haftasiga 50km",
     instagram: "",
     strava: "",
-    badge: null
+    badge: null,
+    gender: "Erkak",
+    level: "Boshlang'ich"
   });
 
   // Unified Goals State
@@ -5795,7 +6285,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#050505] text-white overflow-hidden font-sans relative">
+    <div ref={constraintsRef} className="flex h-full flex-col bg-[#050505] text-white overflow-hidden font-sans relative">
       <WeatherModal 
         isOpen={isWeatherModalOpen}
         onClose={() => setIsWeatherModalOpen(false)}
@@ -5977,6 +6467,72 @@ export default function Profile() {
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Additional Config from Onboarding */}
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div 
+                      onClick={() => {
+                        setActiveConfig('gender');
+                        setIsConfigSelectModalOpen(true);
+                      }}
+                      className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 flex flex-col items-center gap-3 hover:border-primary/30 transition-all cursor-pointer group"
+                    >
+                      <div className="text-primary/60 group-hover:scale-110 transition-transform"><User className="w-5 h-5" /></div>
+                      <div className="text-center">
+                        <div className="text-sm font-black text-white leading-none uppercase tracking-widest">{userData.gender || "Erkak"}</div>
+                        <div className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">Jins</div>
+                      </div>
+                    </div>
+                    <div 
+                      onClick={() => {
+                        setActiveConfig('level');
+                        setIsConfigSelectModalOpen(true);
+                      }}
+                      className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 flex flex-col items-center gap-3 hover:border-primary/30 transition-all cursor-pointer group"
+                    >
+                      <div className="text-primary/60 group-hover:scale-110 transition-transform"><Zap className="w-5 h-5" /></div>
+                      <div className="text-center">
+                        <div className="text-sm font-black text-white leading-none uppercase tracking-widest">{userData.level || "Boshlang'ich"}</div>
+                        <div className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">Tajriba</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div 
+                    onClick={() => {
+                      setActiveConfig('country');
+                      setIsConfigSelectModalOpen(true);
+                    }}
+                    className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center justify-between hover:border-primary/30 transition-all cursor-pointer group mt-3"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-primary/60 group-hover:scale-110 transition-transform shrink-0">
+                        <Globe className="w-5 h-5" />
+                      </div>
+                      <div>
+                          <div className="text-sm font-black text-white leading-none uppercase tracking-widest">{userData.country || "Davlat tanlanmagan"}</div>
+                          <div className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">Davlat (Country)</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-primary transition-colors" />
+                  </div>
+                  <div 
+                    onClick={() => {
+                      setActiveConfig('location');
+                      setIsConfigSelectModalOpen(true);
+                    }}
+                    className="p-4 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center justify-between hover:border-primary/30 transition-all cursor-pointer group mt-2"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-primary/60 group-hover:scale-110 transition-transform shrink-0">
+                        <MapPin className="w-5 h-5" />
+                      </div>
+                      <div>
+                          <div className="text-sm font-black text-white leading-none uppercase tracking-widest">{userData.location || "Hudud tanlanmagan"}</div>
+                          <div className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">Hudud - Location</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-primary transition-colors" />
                   </div>
                 </div>
               </section>
@@ -6981,26 +7537,54 @@ export default function Profile() {
 
               {/* Quick Start Section */}
               <section data-purpose="quick-start-activities">
-                <h3 className="text-2xl font-bold mb-4 text-white tracking-tight">Tez boshlash</h3>
-                <div className="flex space-x-4 overflow-x-auto no-scrollbar pb-2">
-                  <div className="flex-shrink-0 w-[105px] h-[105px] min-h-[105px] bg-[#ccff00]/10 border border-[#ccff00]/20 rounded-[20px] flex flex-col items-center justify-center p-3">
-                    <div className="w-10 h-10 bg-[#ccff00]/20 rounded-full flex items-center justify-center mb-2">
-                      <Activity className="text-[#ccff00] w-5 h-5"/>
-                    </div>
-                    <span className="font-semibold text-[15px] text-white tracking-wide">Yugurish</span>
-                  </div>
-                  <div className="flex-shrink-0 w-[105px] h-[105px] min-h-[105px] bg-white/[0.03] border border-white/5 rounded-[20px] flex flex-col items-center justify-center p-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center mb-2">
-                      <Footprints className="text-white w-5 h-5"/>
-                    </div>
-                    <span className="font-semibold text-[15px] text-white tracking-wide">Yurish</span>
-                  </div>
-                  <div className="flex-shrink-0 w-[105px] h-[105px] min-h-[105px] bg-white/[0.03] border border-white/5 rounded-[20px] flex flex-col items-center justify-center p-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center mb-2">
-                      <Bike className="text-white w-5 h-5"/>
-                    </div>
-                    <span className="font-semibold text-[15px] text-white tracking-wide">Velosiped</span>
-                  </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-white tracking-tight italic uppercase">Tez <span className="text-primary">boshlash</span></h3>
+                  <div className="h-[1px] flex-1 bg-gradient-to-r from-primary/30 to-transparent ml-4 opacity-50" />
+                </div>
+                <div className="flex space-x-4 overflow-x-auto no-scrollbar pb-6 -mx-6 px-6">
+                  {[
+                    { label: "Yugurish", icon: Zap, color: "#CCFF00" },
+                    { label: "Hudud", icon: Map, color: "#FF005C" },
+                    { label: "Qadam", icon: Footprints, color: "#00A3FF" }
+                  ].map((item, idx) => (
+                    <motion.div 
+                      key={idx}
+                      whileHover={{ y: -8, scale: 1.02 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex-shrink-0 w-[120px] h-[155px] relative rounded-[32px] overflow-hidden group cursor-pointer"
+                    >
+                      {/* Background with advanced glassmorphism */}
+                      <div className="absolute inset-0 bg-[#0A0A0F] border border-white/5 transition-all duration-500 group-hover:border-white/20" />
+                      
+                      {/* Internal gradient shine */}
+                      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                      
+                      {/* Accent glow on hover */}
+                      <div 
+                        className="absolute -bottom-12 -right-12 w-28 h-28 blur-[45px] opacity-0 transition-opacity duration-500 group-hover:opacity-30"
+                        style={{ backgroundColor: item.color }}
+                      />
+
+                      <div className="relative h-full flex flex-col items-center justify-center p-6 z-10 gap-4">
+                        <div 
+                          className="w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-500 group-hover:scale-110"
+                          style={{ 
+                            backgroundColor: `${item.color}08`, 
+                            border: `1px solid ${item.color}20`,
+                            boxShadow: `0 8px 32px rgba(0,0,0,0.4)`
+                          }}
+                        >
+                          <item.icon className="w-8 h-8 drop-shadow-[0_0_12px_rgba(255,255,255,0.2)]" style={{ color: item.color }} />
+                        </div>
+                        
+                        <div className="flex flex-col items-center gap-2 w-full">
+                          <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/40 group-hover:text-white group-hover:tracking-[0.25em] transition-all duration-500">
+                            {item.label}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </section>
 
@@ -7358,17 +7942,24 @@ export default function Profile() {
         {/* NEW DYNAMIC CHART SECTION */}
         <section className="px-4 mb-6">
           {/* Segmented Control */}
-          <div className="flex bg-white/5 p-1 rounded-2xl mb-4">
-            {(["KM", "HUDUD", "QADAM"] as const).map(tab => (
+          <div className="flex bg-white/5 p-1 rounded-2xl mb-4 relative z-[2]">
+            {(["Yugurish", "Hudud", "Qadam"] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActivityTab(tab)}
                 className={cn(
-                  "flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
-                  activityTab === tab ? "bg-[#CCFF00] text-black shadow-[0_0_15px_rgba(204,255,0,0.3)]" : "text-white/40 hover:text-white"
+                  "flex-1 relative py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors duration-300",
+                  activityTab === tab ? "text-black" : "text-white/40 hover:text-white"
                 )}
               >
-                {tab}
+                {activityTab === tab && (
+                  <motion.div
+                    layoutId="activeActivityTab"
+                    className="absolute inset-0 bg-[#CCFF00] rounded-xl shadow-[0_0_15px_rgba(204,255,0,0.3)] z-[-1]"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10">{tab}</span>
               </button>
             ))}
           </div>
@@ -7376,7 +7967,7 @@ export default function Profile() {
           <div className="p-6 rounded-[32px] bg-white/[0.02] border border-white/5 relative overflow-hidden min-h-[280px]">
             <AnimatePresence mode="wait">
               {/* KM (Free Route) Chart */}
-              {activityTab === "KM" && (
+              {activityTab === "Yugurish" && (
                 <motion.div
                   key="km"
                   initial={{ opacity: 0, y: 10 }}
@@ -7625,7 +8216,7 @@ export default function Profile() {
               )}
 
               {/* HUDUD (Territory) Chart */}
-              {activityTab === "HUDUD" && (
+              {activityTab === "Hudud" && (
                 <motion.div
                   key="globe"
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -7696,7 +8287,7 @@ export default function Profile() {
               )}
 
               {/* QADAM (Steps) Chart */}
-              {activityTab === "QADAM" && (
+              {activityTab === "Qadam" && (
                 <motion.div
                   key="qadam"
                   initial={{ opacity: 0, y: 10 }}
@@ -8414,61 +9005,33 @@ export default function Profile() {
               className="px-6 pt-6 space-y-8 relative z-50"
             >
               {/* Activity Summary Header */}
-              <div className="flex items-center justify-between mb-2 relative z-[100]">
+              <div className="flex flex-col gap-6 mb-2 relative z-[100]">
                 <div>
                   <h2 className="text-2xl font-black tracking-tighter uppercase">Faoliyat <span className="text-primary">Tarixi</span></h2>
                   <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Oxirgi natijalar</p>
                 </div>
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsActivityFilterOpen(!isActivityFilterOpen)}
-                    className={cn(
-                      "w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300",
-                      isActivityFilterOpen 
-                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]" 
-                        : "bg-white/5 border-white/10 text-white/60 hover:text-white"
-                    )}
-                  >
-                    <Filter className="w-4 h-4" />
-                  </button>
-
-                  <AnimatePresence>
-                    {isActivityFilterOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        className="absolute top-12 right-0 w-48 bg-[#1a1a1a] border border-white/10 rounded-[20px] p-2 shadow-2xl z-[100] flex flex-col gap-1 backdrop-blur-xl"
-                      >
-                        {[
-                          { id: 'recent', label: "Yaqinda", icon: <Clock className="w-4 h-4" /> },
-                          { id: 'distance', label: "Eng uzoq masofa", icon: <Footprints className="w-4 h-4" /> },
-                          { id: 'steps', label: "Eng ko'p qadam", icon: <TrendingUp className="w-4 h-4" /> },
-                        ].map(option => (
-                          <button
-                            key={option.id}
-                            onClick={() => {
-                              setActivitySort(option.id as any);
-                              setIsActivityFilterOpen(false);
-                            }}
-                            className={cn(
-                              "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300",
-                              activitySort === option.id 
-                                ? "bg-white/10 text-white border-white/20" 
-                                : "text-white/60 hover:text-white hover:bg-white/5 border-transparent"
-                            )}
-                          >
-                            {option.icon}
-                            <span className="text-[10px] font-black uppercase tracking-widest">{option.label}</span>
-                            {activitySort === option.id && (
-                              <Check className="w-3 h-3 ml-auto text-white" />
-                            )}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                
+                {/* Segmented Control */}
+                <div className="flex bg-white/5 p-1 rounded-2xl w-full relative z-[2]">
+                  {(["Yugurish", "Hudud", "Qadam"] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActivityFilterTab(tab)}
+                      className={cn(
+                        "flex-1 relative py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors duration-300",
+                        activityFilterTab === tab ? "text-black" : "text-white/40 hover:text-white"
+                      )}
+                    >
+                      {activityFilterTab === tab && (
+                        <motion.div
+                          layoutId="activeHistoryFilterTab"
+                          className="absolute inset-0 bg-[#CCFF00] rounded-xl shadow-[0_0_15px_rgba(204,255,0,0.3)] z-[-1]"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className="relative z-10">{tab}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -8549,22 +9112,43 @@ export default function Profile() {
       />
 
       {/* Floating AI Button */}
-      <div className="fixed bottom-24 right-6 z-50">
+      <motion.div 
+        drag
+        dragConstraints={constraintsRef}
+        dragElastic={0.1}
+        dragMomentum={false}
+        initial={{ y: 0 }}
+        animate={{ y: [0, -8, 0] }}
+        transition={{ 
+          y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+        }}
+        className="fixed bottom-28 right-4 z-50 touch-none"
+      >
         <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.1, rotate: -5 }}
+          whileTap={{ scale: 0.9, rotate: 5 }}
           onClick={() => setIsAIChatOpen(true)}
-          className="relative group"
+          className="relative group cursor-grab active:cursor-grabbing outline-none bg-transparent"
         >
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#FF005C] to-[#8A2BE2] rounded-2xl blur opacity-40 group-hover:opacity-75 transition-all" />
-          <div className="relative w-14 h-14 bg-[#0A0A0F] border border-white/10 rounded-2xl flex items-center justify-center text-white shadow-2xl">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-[#0A0A0F] flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+          {/* The Sneaker Button */}
+          <div className="relative w-24 h-24 md:w-28 md:h-28 flex items-center justify-center">
+            <motion.img 
+              src="/badges/pngwing.com-removebg-preview.png" 
+              alt="AI Assistant" 
+              className="w-full h-full object-contain pointer-events-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)]"
+              referrerPolicy="no-referrer"
+              initial={{ rotate: -15 }}
+              animate={{ rotate: [-15, -10, -15] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            />
+            
+            {/* Minimalist Notification Indicator */}
+            <div className="absolute top-3 right-3 w-3.5 h-3.5 bg-[#CCFF00] rounded-full shadow-[0_0_15px_#CCFF00] border-2 border-black z-20">
+              <div className="absolute inset-0 bg-[#CCFF00] rounded-full animate-ping opacity-60" />
             </div>
           </div>
         </motion.button>
-      </div>
+      </motion.div>
 
       {/* Clan Chat Modal */}
       <ClanChatModal 
@@ -8582,6 +9166,14 @@ export default function Profile() {
       <EditProfileModal 
         isOpen={isEditProfileOpen}
         onClose={() => setIsEditProfileOpen(false)}
+        userData={userData}
+        onUpdate={setUserData}
+      />
+
+      <ConfigSelectModal 
+        isOpen={isConfigSelectModalOpen}
+        onClose={() => setIsConfigSelectModalOpen(false)}
+        activeConfig={activeConfig}
         userData={userData}
         onUpdate={setUserData}
       />

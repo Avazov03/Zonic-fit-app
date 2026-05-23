@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Sector } from 'recharts';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from "@/src/lib/utils";
 
 interface WeeklyProgressProps {
   data: number[]; // Array of values
@@ -36,8 +38,8 @@ const renderCustomSector = (props: any) => {
   const maxOuter = 155;
   const minOuter = 93;
   
-  // Natijani aniqlash: faqat bugungi kun aktiv.
-  const isCurrentlyActive = isToday;
+  // Natijani aniqlash: faqat bugungi kun aktiv (yoki hover/click qilingan bo'lsa)
+  const isCurrentlyActive = isSelected || (!isAnySelected && isToday);
   const showActiveGlow = isCurrentlyActive && !isFuture;
 
   // O'tgan va aktiv ustunlar to'liq balandlikda (maxOuter) bo'ladi
@@ -53,24 +55,14 @@ const renderCustomSector = (props: any) => {
   } else if (showActiveGlow) {
     sectorFill = "#CCFF00"; // Faol bo'lgan ustun (bugungi kun)
     sectorOpacity = 1;
+  } else if (isAnySelected && !isSelected) {
+    sectorOpacity = 0.1; // Boshqasi tanlanganda xiralashadi
   }
 
   // Xavfsiz Y koordinatalari va markaz nuqtalar
   const RADIAN = Math.PI / 180;
   const midAngle = safeStart + (safeEnd - safeStart) / 2;
   
-  // Natija har doim ustun ustida (tashqarisida) ko'rinadi
-  const labelRadius = customOuterRadius + 11; 
-  const labelX = safeCx + labelRadius * Math.cos(-midAngle * RADIAN);
-  const labelY = safeCy + labelRadius * Math.sin(-midAngle * RADIAN);
-
-  const showResult = (!isNaN(labelX) && !isNaN(labelY)) && !isFuture;
-
-  // Natija radius (ustun tashqarisida)
-  const outRadius = maxOuter + 18; 
-  const outX = safeCx + outRadius * Math.cos(-midAngle * RADIAN);
-  const outY = safeCy + outRadius * Math.sin(-midAngle * RADIAN);
-
   // Kun/Oy harfini ustuni qalinligi o'rtasida joylashtirish
   const defaultDayRadius = minOuter + (maxOuter - minOuter) / 2;
   const dayX = safeCx + defaultDayRadius * Math.cos(-midAngle * RADIAN);
@@ -88,7 +80,7 @@ const renderCustomSector = (props: any) => {
   const showDay = (!isNaN(dayX) && !isNaN(dayY)) && dayName !== '';
 
   return (
-    <g style={{ outline: 'none' }} className="outline-none focus:outline-none focus-visible:outline-none">
+    <g style={{ outline: 'none' }} className="outline-none focus:outline-none focus-visible:outline-none cursor-pointer transition-all">
       {/* Background Track (Track barqaror turishi uchun) */}
       <Sector
         cx={safeCx}
@@ -113,7 +105,7 @@ const renderCustomSector = (props: any) => {
           fill="#CCFF00"
           cornerRadius={4}
           filter="url(#glowFilter)"
-          opacity={0.4}
+          opacity={0.6}
         />
       )}
       
@@ -144,30 +136,13 @@ const renderCustomSector = (props: any) => {
         cornerRadius={1}
       />
 
-      {/* Tepadagi natija (km2) qismi ustundan tashqarida ko'rsatiladi */}
-      {showResult && (
-        <g style={{ pointerEvents: 'none' }}>
-          <text
-            x={outX}
-            y={outY}
-            fill={showActiveGlow ? "#CCFF00" : "rgba(255, 255, 255, 0.6)"}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontSize="12px"
-            fontWeight="900"
-          >
-            {isFuture ? '-' : `${(activityVal * 0.15).toFixed(1)} km²`}
-          </text>
-        </g>
-      )}
-
       {/* Kun/Oy nomi - Ustunni ichida markazda */}
       {showDay && (
         <text
           x={dayX}
           y={dayY}
           fill={showActiveGlow ? "#111111" : (isFuture ? "rgba(255, 255, 255, 0.3)" : "#CCFF00")}
-          opacity={showActiveGlow ? 1 : 0.8}
+          opacity={showActiveGlow ? 1 : (isAnySelected && !isSelected ? 0.3 : 0.8)}
           textAnchor="middle"
           dominantBaseline="central"
           fontSize="10px"
@@ -182,6 +157,7 @@ const renderCustomSector = (props: any) => {
 };
 
 export const WeeklyProgress = ({ data, mode = "hafta" }: WeeklyProgressProps) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const now = new Date();
   let currentIndex = 0;
   
@@ -205,8 +181,8 @@ export const WeeklyProgress = ({ data, mode = "hafta" }: WeeklyProgressProps) =>
       activityValue: val,
       isFuture,
       isToday,
-      isSelected: false,
-      isAnySelected: false,
+      isSelected: activeIndex === i,
+      isAnySelected: activeIndex !== null,
       totalLength: data.length,
       iterIndex: i,
       mode
@@ -220,6 +196,8 @@ export const WeeklyProgress = ({ data, mode = "hafta" }: WeeklyProgressProps) =>
     return 'url(#colorLow)'; 
   };
 
+  const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
+
   return (
     <div className="h-64 w-full relative outline-none focus:outline-none">
       <style dangerouslySetInnerHTML={{__html: `
@@ -232,7 +210,7 @@ export const WeeklyProgress = ({ data, mode = "hafta" }: WeeklyProgressProps) =>
         }
       `}} />
       <ResponsiveContainer width="100%" height="100%" className="outline-none focus:outline-none">
-        <PieChart style={{ outline: 'none' }} className="outline-none focus:outline-none">
+        <PieChart style={{ outline: 'none' }} className="outline-none focus:outline-none" onMouseLeave={() => setActiveIndex(null)}>
           <defs>
             {/* Porlash effekti */}
             <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
@@ -287,6 +265,8 @@ export const WeeklyProgress = ({ data, mode = "hafta" }: WeeklyProgressProps) =>
             dataKey="value"
             stroke="none"
             isAnimationActive={false}
+            onClick={(_, index) => setActiveIndex(index === activeIndex ? null : index)}
+            onMouseEnter={(_, index) => setActiveIndex(index)}
             shape={(props: any) => renderCustomSector({
               ...props,
               payload: chartData[props.index]
@@ -298,6 +278,34 @@ export const WeeklyProgress = ({ data, mode = "hafta" }: WeeklyProgressProps) =>
           </Pie>
         </PieChart>
       </ResponsiveContainer>
+
+      {/* Cyberpunk Dynamic Center Info Block */}
+      <AnimatePresence>
+        {activeItem && !activeItem.isFuture && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8, y: 10, x: "-50%" }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, scale: 0.8, y: 10, x: "-50%" }}
+            className="absolute bottom-5 left-1/2 flex flex-col items-center justify-center p-3 pointer-events-none z-[100] min-w-[100px]"
+          >
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#CCFF00] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mb-1">
+              {mode === "hafta" 
+                ? LABELS_WEEK[activeItem.iterIndex % 7]
+                : mode === "yil" 
+                  ? LABELS_YEAR[activeItem.iterIndex % 12]
+                  : LABELS_MONTH[activeItem.iterIndex % 5]}
+            </span>
+            <div className="flex items-end gap-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              <span className="text-3xl font-black text-[#CCFF00] leading-none tracking-tighter">
+                {(activeItem.activityValue * 0.15).toFixed(1)}
+              </span>
+              <span className="text-[10px] font-bold text-[#CCFF00] uppercase tracking-widest pb-0.5">
+                km²
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
