@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "sonner";
+import { CustomToaster } from "./components/Toaster";
 import Login from "./screens/Login";
 import Register from "./screens/Register";
 import Onboarding from "./screens/Onboarding";
@@ -29,13 +29,7 @@ export default function App() {
     <div className="flex h-screen w-full items-center justify-center bg-[#050505] overflow-hidden">
       <div className="relative h-full w-full max-w-[430px] overflow-hidden bg-surface flex flex-col shadow-2xl transform-none" style={{ transform: 'translate3d(0,0,0)' }}>
         <Router>
-          <Toaster 
-            theme="dark" 
-            position="top-center" 
-            richColors 
-            closeButton
-            expand={false}
-          />
+          <CustomToaster />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "../components/Toaster";
 import { motion, AnimatePresence } from "motion/react";
 import ReactCrop, { centerCrop, makeAspectCrop, Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -15,7 +15,8 @@ import {
   Smartphone, Watch, Languages, EyeOff, UserCheck, Link2, Link2Off,
   User, Scale, Ruler, Calendar, Globe2, ShieldCheck, Radio, Quote,
   Battery, Bluetooth, AlertTriangle, Volume1, Volume, RefreshCw,
-  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight, GraduationCap, Apple, Moon
+  Sun, Wind, CloudRain, Cloud, Play, Droplets, Utensils, ArrowUpRight, GraduationCap, Apple, Moon,
+  AlertCircle, LogOut, Copy
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/src/lib/utils";
@@ -1133,16 +1134,7 @@ const AIChatModal = ({
                       setInputText("");
                       if (isListening) onStopMic();
                       toast.error("Matn o'chirildi", {
-                        icon: '🗑️',
-                        duration: 1500,
-                        style: {
-                          borderRadius: '16px',
-                          background: '#15151F',
-                          color: '#fff',
-                          border: '1px solid rgba(239, 64, 64, 0.2)',
-                          fontSize: '11px',
-                          fontWeight: 'bold'
-                        }
+                        duration: 1500
                       });
                     }
                   }}
@@ -2637,7 +2629,7 @@ const LanguageModal = ({ isOpen, onClose, currentLang, onSelect }: { isOpen: boo
                     setTimeout(() => {
                       toast.dismiss(loadingToast);
                       toast.success(`Til ${lang.name}ga muvaffaqiyatli o'zgartirildi`, {
-                        icon: lang.flag
+                        icon: <Languages className="w-4 h-4 text-white" />
                       });
                       onClose();
                     }, 1000);
@@ -2710,7 +2702,9 @@ const GadgetModal = ({ isOpen, onClose, gadget, onToggle }: any) => {
   const handleDisconnect = () => {
     onToggle(gadget.id, false);
     onClose();
-    toast.success(`${gadget.name} uzildi`);
+    toast.success(`${gadget.name} uzildi`, {
+      icon: <Link2Off className="w-4 h-4 text-white" />
+    });
   };
 
   return (
@@ -2943,7 +2937,9 @@ const ConnectionModal = ({ isOpen, onClose, connection, onToggle }: { isOpen: bo
         setStep('success');
         setTimeout(() => {
           onToggle(connection.id, true);
-          toast.success(`${connection.name} muvaffaqiyatli ulandi!`);
+          toast.success(`${connection.name} muvaffaqiyatli ulandi!`, {
+            icon: <Link2 className="w-4 h-4 text-white" />
+          });
           onClose();
           setStep('info');
           setSyncProgress(0);
@@ -2958,7 +2954,9 @@ const ConnectionModal = ({ isOpen, onClose, connection, onToggle }: { isOpen: bo
     setTimeout(() => {
       setIsLoading(false);
       onToggle(connection.id, false);
-      toast.error(`${connection.name} uzildi. ${keepData ? "Ma'lumotlar saqlandi." : "Ma'lumotlar o'chirildi."}`);
+      toast.error(`${connection.name} uzildi. ${keepData ? "Ma'lumotlar saqlandi." : "Ma'lumotlar o'chirildi."}`, {
+        icon: <Link2Off className="w-4 h-4 text-white" />
+      });
       onClose();
       setStep('info');
     }, 1500);
@@ -3419,7 +3417,9 @@ const ConfigSelectModal = ({
 
   const handleSave = () => {
     onUpdate({ ...userData, [activeConfig]: value });
-    toast.success("Ma'lumotlar saqlandi");
+    toast.success("Ma'lumotlar saqlandi", {
+      icon: <Check className="w-4 h-4 text-white" />
+    });
     onClose();
   };
 
@@ -3643,12 +3643,7 @@ const BodyMetricsModal = ({
   const handleSave = () => {
     onUpdate({ ...bodyMetrics, [currentMetric]: value });
     toast.success("Ma'lumotlar saqlandi", {
-      style: {
-        borderRadius: '16px',
-        background: '#fff',
-        color: '#000',
-        fontWeight: 'bold'
-      }
+      icon: <Check className="w-4 h-4 text-white" />
     });
     onClose();
   };
@@ -3917,7 +3912,9 @@ const EditProfileModal = ({
 
   const handleSave = () => {
     onUpdate({ name, location, bio, instagram, strava, badge, avatar, cover, gender, level, country });
-    toast.success("Profil muvaffaqiyatli yangilandi");
+    toast.success("Profil muvaffaqiyatli yangilandi", {
+      icon: <UserCheck className="w-4 h-4 text-white" />
+    });
     onClose();
   };
 
@@ -5027,7 +5024,9 @@ export default function Profile() {
   
   const startWakeWordListener = async () => {
     if (typeof window === 'undefined' || !('WebkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      toast.error("Ovozli funksiya brauzeringizda qo'llab-quvvatlanmaydi");
+      toast.error("Ovozli funksiya brauzeringizda qo'llab-quvvatlanmaydi", {
+        icon: <AlertCircle className="w-4 h-4 text-white" />
+      });
       return;
     }
 
@@ -5041,9 +5040,7 @@ export default function Profile() {
       await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
       console.error("Mic Permission Denied:", err);
-      toast.error("Mikrofonga ruxsat berilmadi. Iltimos, sozlamalardan ruxsat bering.", {
-        style: { background: '#0A0A0A', color: '#fff', border: '1px solid #FF005C' }
-      });
+      toast.error("Mikrofonga ruxsat berilmadi. Iltimos, sozlamalardan ruxsat bering.");
       setIsAIVoiceAssistantActive(false);
       return;
     }
@@ -5084,10 +5081,7 @@ export default function Profile() {
       if (triggers.some(t => text.includes(t))) {
         console.log("Wake word matched!");
         // Visual & Audio Feedback
-        toast.success("Eshityapman...", {
-          icon: '🎙️',
-          style: { background: '#0A0A0A', color: '#fff', border: '1px solid #CCFF00' }
-        });
+        toast.success("Eshityapman...");
         
         // Play subtle beep if possible
         try {
@@ -5231,9 +5225,7 @@ export default function Profile() {
       recorder.start();
       
       toast.info("Tinglayapman... (Gapiring)", {
-        icon: '🎙️',
-        duration: 2000,
-        style: { background: '#0A0A0A', color: '#fff', border: '1px solid #CCFF00' }
+        duration: 2000
       });
 
       // Use Browser Speech Recognition purely for UI visual feedback and silence detection
@@ -5295,7 +5287,9 @@ export default function Profile() {
 
     } catch (err) {
       console.error("Mic Error:", err);
-      toast.error("Mikrofondan foydalanib bo'lmadi");
+      toast.error("Mikrofondan foydalanib bo'lmadi", {
+        icon: <AlertCircle className="w-4 h-4 text-white" />
+      });
       setAssistantState('listening_wake');
       startWakeWordListener();
     }
@@ -5318,7 +5312,9 @@ export default function Profile() {
   const startWebSpeechRecognition = (isRestart = false) => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).WebkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error("Brauzer ovozni tanishni qo'llab-quvvatlamaydi");
+      toast.error("Brauzer ovozni tanishni qo'llab-quvvatlamaydi", {
+        icon: <AlertCircle className="w-4 h-4 text-white" />
+      });
       setAssistantState('listening_wake');
       startWakeWordListener();
       return;
@@ -5668,7 +5664,9 @@ export default function Profile() {
 
     } catch (error) {
       console.error("Chat Error:", error);
-      toast.error("AI bilan bog'lanib bo'lmadi");
+      toast.error("AI bilan bog'lanib bo'lmadi", {
+        icon: <AlertCircle className="w-4 h-4 text-white" />
+      });
       const errorMsg = "Uzur, aloqa o'rnatishda xatolik yuz berdi. Qaytadan aytib ko'ring.";
       setChatMessages(prev => [...prev, { role: 'model', text: errorMsg }]);
       setIsTyping(false);
@@ -5816,7 +5814,9 @@ export default function Profile() {
 
     } catch (error) {
       console.error("Voice Coach Error:", error);
-      toast.error("Aloqa uzildi");
+      toast.error("Aloqa uzildi", {
+        icon: <AlertCircle className="w-4 h-4 text-white" />
+      });
       const errorMsg = "Aloqada xatolik bo'ldi. Uzr.";
       speakText(errorMsg);
       setAssistantState('idle');
@@ -5956,7 +5956,9 @@ export default function Profile() {
         lastSync: status ? "Hozirgina" : null
       } : c
     ));
-    toast.success(status ? "Muvaffaqiyatli ulandi" : "Ulanish uzildi");
+    toast.success(status ? "Muvaffaqiyatli ulandi" : "Ulanish uzildi", {
+      icon: status ? <Link2 className="w-4 h-4 text-white" /> : <Link2Off className="w-4 h-4 text-white" />
+    });
   };
 
   const handleGadgetToggle = (id: string, status: boolean) => {
@@ -6206,16 +6208,11 @@ export default function Profile() {
 
   const toggleSetting = async (key: keyof typeof settings, label: string) => {
     if (key === 'biometricLock' && !settings.biometricLock) {
-      const loadingToast = toast.loading("FaceID skanerlanmoqda...", {
-        style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
-      });
+      const loadingToast = toast.loading("FaceID skanerlanmoqda...");
       await new Promise(resolve => setTimeout(resolve, 2000));
       toast.dismiss(loadingToast);
       setSettings(prev => ({ ...prev, [key]: true }));
-      toast.success("Biometrik himoya faollashtirildi", {
-        icon: '🔒',
-        style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(204,255,0,0.2)' }
-      });
+      toast.success("Biometrik himoya faollashtirildi");
       return;
     }
 
@@ -6240,48 +6237,34 @@ export default function Profile() {
     }
 
     if (newValue) {
-      toast.success(`${label} yoqildi`, {
-        style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(204,255,0,0.2)' }
-      });
+      toast.success(`${label} yoqildi`);
       if (key === 'voiceFeedback') {
         // Premium greeting when turned on
         setTimeout(() => handleTestVoice(), 500);
       }
     } else {
-      toast.error(`${label} o'chirildi`, {
-        style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(255,0,0,0.2)' }
-      });
+      toast.error(`${label} o'chirildi`);
     }
   };
 
   const handleClearCache = async () => {
-    const loadingToast = toast.loading("Kesh tozalanmoqda...", {
-      style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
-    });
+    const loadingToast = toast.loading("Kesh tozalanmoqda...");
     
     // Simulate cache clearing
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     toast.dismiss(loadingToast);
-    toast.success("142 MB kesh muvaffaqiyatli tozalandi", {
-      icon: '🧹',
-      style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(204,255,0,0.2)' }
-    });
+    toast.success("142 MB kesh muvaffaqiyatli tozalandi");
   };
 
   const handleExportData = async () => {
-    const loadingToast = toast.loading("Ma'lumotlar eksportga tayyorlanmoqda...", {
-      style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
-    });
+    const loadingToast = toast.loading("Ma'lumotlar eksportga tayyorlanmoqda...");
     
     // Simulate data preparation
     await new Promise(resolve => setTimeout(resolve, 2500));
     
     toast.dismiss(loadingToast);
-    toast.success("Ma'lumotlar paketi elektron pochtangizga yuborildi", {
-      icon: '📧',
-      style: { background: '#0A0A0A', color: '#fff', border: '1px solid rgba(204,255,0,0.2)' }
-    });
+    toast.success("Ma'lumotlar paketi elektron pochtangizga yuborildi");
   };
 
   return (
@@ -6314,8 +6297,7 @@ export default function Profile() {
                     setNewsItems(prev => prev.filter((_, idx) => idx !== newsIndex));
                     setNewsIndex(0);
                     toast("Xabar olib tashlandi", { 
-                      description: removedItem?.text.substring(0, 30) + '...',
-                      icon: '🗑️',
+                      icon: <Trash2 className="w-4 h-4 text-white" />,
                       duration: 2000 
                     });
                   } else if (info.offset.x < -40) {
@@ -6775,7 +6757,9 @@ export default function Profile() {
                           onClick={() => {
                             const val = opt === 'Hamma' ? 'all' : opt === 'Do\'stlar' ? 'friends' : 'none';
                             setSettings(s => ({ ...s, mapVisibility: val }));
-                            toast.success(`Xaritada ko'rinish: ${opt}`);
+                            toast.success(`Xaritada ko'rinish: ${opt}`, {
+                              icon: <MapPin className="w-4 h-4 text-white" />
+                            });
                           }}
                           className={cn(
                             "py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
@@ -6826,7 +6810,9 @@ export default function Profile() {
                                 }).catch(console.error);
                               } else {
                                 navigator.clipboard.writeText('https://zonic.uz/track/avazov_7721');
-                                toast.success("Havola nusxalandi");
+                                toast.success("Havola nusxalandi", {
+                                  icon: <Copy className="w-4 h-4 text-white" />
+                                });
                               }
                             }}
                             className="p-2 rounded-xl bg-primary text-black"
@@ -7007,7 +6993,9 @@ export default function Profile() {
                           onClick={() => {
                             setSettings(s => {
                               const newValue = !s.notifications[item.key as keyof typeof s.notifications];
-                              toast.success(`${item.label} ${newValue ? 'yoqildi' : 'o\'chirildi'}`);
+                              toast.success(`${item.label} ${newValue ? 'yoqildi' : 'o\'chirildi'}`, {
+                                icon: <Bell className="w-4 h-4 text-white" />
+                              });
                               return { 
                                 ...s, 
                                 notifications: { ...s.notifications, [item.key]: newValue } 
@@ -7055,7 +7043,9 @@ export default function Profile() {
                         <button 
                           onClick={() => {
                             setSettings(s => ({ ...s, units: 'km' }));
-                            toast.success("O'lchov birligi: KM");
+                            toast.success("O'lchov birligi: KM", {
+                              icon: <Activity className="w-4 h-4 text-white" />
+                            });
                           }}
                           className={cn("flex-1 py-1.5 rounded-lg text-[9px] font-black transition-all", settings.units === 'km' ? "bg-primary text-black" : "text-white/40")}
                         >
@@ -7064,7 +7054,9 @@ export default function Profile() {
                         <button 
                           onClick={() => {
                             setSettings(s => ({ ...s, units: 'mi' }));
-                            toast.success("O'lchov birligi: MI");
+                            toast.success("O'lchov birligi: MI", {
+                              icon: <Activity className="w-4 h-4 text-white" />
+                            });
                           }}
                           className={cn("flex-1 py-1.5 rounded-lg text-[9px] font-black transition-all", settings.units === 'mi' ? "bg-primary text-black" : "text-white/40")}
                         >
@@ -7075,7 +7067,9 @@ export default function Profile() {
                         <button 
                           onClick={() => {
                             setSettings(s => ({ ...s, weightUnit: 'kg' }));
-                            toast.success("Vazn o'lchovi: KG");
+                            toast.success("Vazn o'lchovi: KG", {
+                              icon: <Activity className="w-4 h-4 text-white" />
+                            });
                           }}
                           className={cn("flex-1 py-1.5 rounded-lg text-[9px] font-black transition-all", settings.weightUnit === 'kg' ? "bg-primary text-black" : "text-white/40")}
                         >
@@ -7084,7 +7078,9 @@ export default function Profile() {
                         <button 
                           onClick={() => {
                             setSettings(s => ({ ...s, weightUnit: 'lb' }));
-                            toast.success("Vazn o'lchovi: LB");
+                            toast.success("Vazn o'lchovi: LB", {
+                              icon: <Activity className="w-4 h-4 text-white" />
+                            });
                           }}
                           className={cn("flex-1 py-1.5 rounded-lg text-[9px] font-black transition-all", settings.weightUnit === 'lb' ? "bg-primary text-black" : "text-white/40")}
                         >
@@ -7153,7 +7149,9 @@ export default function Profile() {
                       key={i} 
                       onClick={() => {
                         if (item.type === 'support') {
-                          toast.success("Qo'llab-quvvatlash xizmatiga ulanmoqda...");
+                          toast.success("Qo'llab-quvvatlash xizmatiga ulanmoqda...", {
+                            icon: <Headphones className="w-4 h-4 text-white" />
+                          });
                         } else if (item.type === 'export') {
                           handleExportData();
                         } else {
@@ -7176,7 +7174,9 @@ export default function Profile() {
               <div className="space-y-3">
                 <button 
                   onClick={() => {
-                    toast.success("Akkauntdan chiqildi");
+                    toast.success("Akkauntdan chiqildi", {
+                      icon: <LogOut className="w-4 h-4 text-white" />
+                    });
                     navigate('/login');
                   }}
                   className="w-full py-5 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center gap-3 group hover:bg-white/10 transition-all"
@@ -7245,7 +7245,7 @@ export default function Profile() {
                       onDragEnd={(_, info) => {
                         if (Math.abs(info.offset.x) > 60) {
                           setNotifications(prev => prev.filter(n => n.id !== notif.id));
-                          toast("Bildirishnoma o'chirildi", { icon: '🗑️' });
+                          toast("Bildirishnoma o'chirildi", { icon: <Trash2 className="w-4 h-4 text-white" /> });
                         }
                       }}
                       className="p-4 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors group cursor-grab active:cursor-grabbing"
@@ -9191,7 +9191,9 @@ export default function Profile() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
           setIsDeleteModalOpen(false);
-          toast.success("Hisob o'chirildi");
+          toast.success("Hisob o'chirildi", {
+            icon: <Trash2 className="w-4 h-4 text-white" />
+          });
           navigate('/login');
         }}
       />
