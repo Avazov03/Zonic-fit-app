@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/src/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Trophy, Zap, Target, MapPin, Award, UserPlus, MessageCircle, MoreHorizontal, ChevronRight, Share2, Flame } from "lucide-react";
 import { useState, useMemo } from "react";
+import { AvatarFrame } from "../components/AvatarFrame";
 
 // Mock data to match Leaderboard and MapRun
 const MOCK_USERS: Record<string, any> = {
@@ -9,6 +11,7 @@ const MOCK_USERS: Record<string, any> = {
     name: "ZAFAR",
     level: 42,
     avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Zafar&backgroundColor=b6e3f4",
+    frame: null,
     color: "#00F0FF",
     stats: { distance: "156.4", pace: "4:20", wins: 28, streak: 12 },
     territory: "Olmazor",
@@ -82,10 +85,15 @@ export default function UserProfile() {
               className="absolute -inset-4 rounded-full blur-2xl opacity-20 animate-pulse"
               style={{ backgroundColor: user.color }}
             />
-            <div className="relative w-32 h-32 rounded-3xl border-2 border-white/10 p-1.5 bg-surface/50 backdrop-blur-xl">
-              <img src={user.avatar} className="w-full h-full rounded-2xl object-cover" />
+            <div className="relative">
+              <AvatarFrame 
+                src={user.avatar} 
+                frameId={user.frame} 
+                size="xl" 
+                className="shadow-2xl"
+              />
               <div 
-                className="absolute -bottom-2 -right-2 px-3 py-1 rounded-full border border-white/10 shadow-lg text-[10px] font-black text-white"
+                className="absolute -bottom-2 -right-2 px-3 py-1 rounded-full border border-white/10 shadow-lg text-[10px] font-black text-white z-10"
                 style={{ backgroundColor: user.color }}
               >
                 LVL {user.level}
@@ -229,8 +237,4 @@ function StatCard({ icon, label, value, unit, color }: any) {
       </div>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
 }

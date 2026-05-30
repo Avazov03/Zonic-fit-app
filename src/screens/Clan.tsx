@@ -3,12 +3,15 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, Star, Globe, Map, Plus, TrendingUp, MoreHorizontal, 
   MessageSquare, Award, Lock, X, Send, PersonStanding, Activity, Bell, Search, Zap, Flame,
-  Settings, Crop as CropIcon, Target, Edit2, MapPin
+  Settings, Crop as CropIcon, Target, Edit2, MapPin, Swords
 } from "lucide-react";
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { cn } from "@/src/lib/utils";
 import BottomNav from "../components/BottomNav";
+import { toast } from "../components/Toaster";
+import { AvatarFrame } from "../components/AvatarFrame";
+import { useActiveFrame } from "../lib/hooks";
 
 const MarqueeText = ({ text, className }: { text: string; className?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,6 +106,16 @@ const CLAN_DATA = {
     { id: 2, name: "Uzbek Tigers", tag: "UZT", level: 10, members: 15, maxMembers: 20, rank: 5, territory: 32.1, avatar: "https://picsum.photos/seed/clan2/100/100" },
     { id: 3, name: "Speed Demons", tag: "SPD", level: 8, members: 12, maxMembers: 15, rank: 12, territory: 18.5, avatar: "https://picsum.photos/seed/clan3/100/100" },
     { id: 4, name: "Night Owls", tag: "NTO", level: 5, members: 8, maxMembers: 10, rank: 45, territory: 5.2, avatar: "https://picsum.photos/seed/clan4/100/100" },
+  ],
+  friends: [
+    { id: 1, name: "Sardor_Run", status: "online", lastActive: "Hozir", xp: 1820, avatar: "https://picsum.photos/seed/user2/100/100" },
+    { id: 2, name: "Malika_Z", status: "online", lastActive: "Hozir", xp: 1540, avatar: "https://picsum.photos/seed/user3/100/100" },
+    { id: 3, name: "Jasur_Runner", status: "offline", lastActive: "15 daqiqa avval", xp: 1200, avatar: "https://picsum.photos/seed/user4/100/100" },
+    { id: 4, name: "Nigora_Fit", status: "offline", lastActive: "2 soat avval", xp: 950, avatar: "https://picsum.photos/seed/user5/100/100" },
+  ],
+  friendRequests: [
+    { id: 101, name: "Ali_Strong", xp: 450, avatar: "https://picsum.photos/seed/user101/100/100" },
+    { id: 102, name: "Zuhra_Active", xp: 720, avatar: "https://picsum.photos/seed/user102/100/100" },
   ]
 };
 
@@ -1147,7 +1160,40 @@ const ClanSettingsModal = ({
 };
 
 export default function Clan() {
+  const activeFrame = useActiveFrame();
   const [activeTab, setActiveTab] = useState("Jamoa");
+  const [friendSubTab, setFriendSubTab] = useState<"list" | "requests">("list");
+  
+  // New States for Friends Functionality
+  const [friends, setFriends] = useState(CLAN_DATA.friends);
+  const [friendRequests, setFriendRequests] = useState(CLAN_DATA.friendRequests);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleAcceptRequest = (request: any) => {
+    setFriendRequests(prev => prev.filter(r => r.id !== request.id));
+    setFriends(prev => [
+      ...prev,
+      {
+        id: request.id,
+        name: request.name,
+        status: "online",
+        lastActive: "Hozir",
+        xp: request.xp,
+        avatar: request.avatar
+      }
+    ]);
+    toast.success(`${request.name} do'stlar qatoriga qo'shildi`);
+  };
+
+  const handleRejectRequest = (id: number) => {
+    setFriendRequests(prev => prev.filter(r => r.id !== id));
+    toast.info("Taklif rad etildi");
+  };
+
+  const filteredFriends = friends.filter(friend => 
+    friend.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const [isClanChatOpen, setIsClanChatOpen] = useState(false);
   const [isClanMembersOpen, setIsClanMembersOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -1235,7 +1281,7 @@ export default function Clan() {
 
       {/* Tabs */}
       <div className="flex px-6 border-b border-white/5 bg-[#050505]/20 backdrop-blur-md shrink-0">
-        {["Jamoa", "Chellenjlar", "Boshqa jamoalar"].map((tab) => (
+        {["Jamoa", "Do'stlar", "Boshqa jamoalar"].map((tab) => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -1296,18 +1342,16 @@ export default function Clan() {
                   onClick={() => setIsSettingsOpen(true)}
                   className="absolute top-[76px] left-6 z-20 group/avatar active:scale-95 transition-transform"
                 >
-                  <div className="w-[132px] h-[132px] rounded-full border-[6px] border-[#0A0C0A] bg-black overflow-hidden shadow-2xl relative">
-                    <img 
-                      src={clanInfo.avatar} 
-                      alt="Clan Avatar" 
-                      className="w-full h-full object-cover group-hover/avatar:scale-110 transition-transform duration-700"
-                      referrerPolicy="no-referrer"
-                    />
-                    {/* Edit Overlay */}
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(204,255,0,0.3)]">
-                        <Edit2 className="w-5 h-5" />
-                      </div>
+                  <AvatarFrame 
+                    src={clanInfo.avatar} 
+                    frameId={activeFrame} 
+                    size="xl" 
+                    className="border-[6px] border-[#0A0C0A]"
+                  />
+                  {/* Edit Overlay */}
+                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 z-30">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(204,255,0,0.3)]">
+                      <Edit2 className="w-5 h-5" />
                     </div>
                   </div>
                 </button>
@@ -1521,65 +1565,184 @@ export default function Clan() {
             </motion.div>
           )}
 
-          {activeTab === "Chellenjlar" && (
+          {activeTab === "Do'stlar" && (
             <motion.div
-              key="chellenjlar"
+              key="friends"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
               className="px-6 pt-6 pb-24 space-y-6"
             >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-black uppercase tracking-tighter text-white">Barcha Chellenjlar</h3>
-                <div className="p-2 rounded-xl bg-white/5 text-white/40">
-                  <Award className="w-5 h-5" />
-                </div>
+              {/* Modern Sub-Tabs Switcher */}
+              <div className="flex p-1.5 bg-white/5 rounded-2xl border border-white/5">
+                <button 
+                  onClick={() => setFriendSubTab("list")}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10",
+                    friendSubTab === "list" ? "text-black" : "text-white/40"
+                  )}
+                >
+                  {friendSubTab === "list" && (
+                    <motion.div 
+                      layoutId="subTabHighlight"
+                      className="absolute inset-0 bg-primary rounded-xl -z-10 shadow-[0_10px_20px_rgba(204,255,0,0.2)]"
+                    />
+                  )}
+                  Do'stlar
+                </button>
+                <button 
+                  onClick={() => setFriendSubTab("requests")}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10",
+                    friendSubTab === "requests" ? "text-black" : "text-white/40"
+                  )}
+                >
+                  {friendSubTab === "requests" && (
+                    <motion.div 
+                      layoutId="subTabHighlight"
+                      className="absolute inset-0 bg-primary rounded-xl -z-10 shadow-[0_10px_20px_rgba(204,255,0,0.2)]"
+                    />
+                  )}
+                  Takliflar {friendRequests.length > 0 && `(${friendRequests.length})`}
+                </button>
               </div>
-              
-              <div className="space-y-4">
-                {CLAN_DATA.allChallenges.map(challenge => (
-                  <div key={challenge.id} className="p-5 rounded-[28px] bg-white/[0.02] border border-white/5 relative overflow-hidden group">
-                    {challenge.status === 'completed' && (
-                      <div className="absolute inset-0 bg-primary/5 z-0" />
-                    )}
-                    <div className="relative z-10">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-sm font-black uppercase tracking-tight">{challenge.title}</h4>
-                            {challenge.status === 'completed' && <Award className="w-3.5 h-3.5 text-primary" />}
-                          </div>
-                          <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
-                            {challenge.status === 'upcoming' ? 'Boshlanmagan' : `${challenge.progress} / ${challenge.total} ${challenge.unit}`}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{challenge.reward}</p>
-                          <p className={cn(
-                            "text-[9px] font-bold uppercase tracking-widest mt-0.5",
-                            challenge.status === 'completed' ? "text-primary/50" : 
-                            challenge.status === 'upcoming' ? "text-white/20" : "text-white/40"
-                          )}>
-                            {challenge.timeLeft}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(challenge.progress / challenge.total) * 100}%` }}
-                          className={cn(
-                            "h-full rounded-full",
-                            challenge.status === 'completed' ? "bg-primary" : 
-                            challenge.status === 'upcoming' ? "bg-white/10" : "bg-primary"
-                          )}
-                        />
-                      </div>
+
+              {friendSubTab === "list" ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-black uppercase tracking-tighter text-white">Mening Do'stlarim</h3>
+                    <div className="p-2 rounded-xl bg-white/5 text-white/40">
+                      <Users className="w-5 h-5" />
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="relative mb-8">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                    <input 
+                      type="text" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Do'stlarni qidirish..."
+                      className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-14 pr-4 text-[11px] font-bold focus:outline-none focus:border-primary/50 transition-all placeholder:text-white/20 shadow-inner"
+                    />
+                    <button 
+                      onClick={() => {
+                        if(searchQuery) {
+                          toast.info(`Qidiruv natijalari ko'rsatilmoqda...`);
+                        }
+                      }}
+                      className="absolute right-2 top-2 bottom-2 px-4 rounded-xl bg-primary text-black text-[9px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(204,255,0,0.2)] active:scale-95 transition-all"
+                    >
+                      Qidirish
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {filteredFriends.length > 0 ? filteredFriends.map(friend => (
+                      <div key={friend.id} className="p-3 rounded-[28px] bg-[#0A0A0A] border border-white/5 flex flex-row items-center justify-between gap-4 group hover:border-white/10 hover:bg-[#0D0D0D] transition-colors relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-duration-500" />
+                        
+                        <div className="flex items-center gap-3 relative z-10 w-full min-w-0">
+                          <div className="relative shrink-0">
+                            <img src={friend.avatar} alt={friend.name} className="w-12 h-12 rounded-[16px] object-cover border border-white/10 shadow-lg" referrerPolicy="no-referrer" />
+                            <div className={cn(
+                              "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-[3px] border-[#0A0A0A]",
+                              friend.status === "online" ? "bg-primary shadow-[0_0_10px_rgba(204,255,0,0.5)]" : "bg-white/20"
+                            )} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-[12px] font-black uppercase tracking-tight text-white truncate">{friend.name}</h4>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest truncate">{friend.lastActive}</p>
+                              <div className="w-1 h-1 shrink-0 rounded-full bg-white/10" />
+                              <p className="text-[9px] font-black text-primary uppercase tracking-widest shrink-0">{friend.xp} XP</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 relative z-10 shrink-0">
+                          <button 
+                            onClick={() => toast.success(`${friend.name} bilan bellashuvga chorlandi!`)}
+                            className="shrink-0 w-11 h-11 rounded-xl bg-primary text-black flex items-center justify-center active:scale-95 transition-all shadow-[0_0_20px_rgba(204,255,0,0.15)] hover:shadow-[0_0_30px_rgba(204,255,0,0.3)] hover:scale-[1.02]"
+                          >
+                            <Swords className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => toast.success(`${friend.name} ga xabar yuborish...`)}
+                            className="shrink-0 w-11 h-11 rounded-xl bg-white/5 border border-white/5 hover:border-white/20 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all active:scale-95"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-10 text-white/40 text-xs font-bold uppercase tracking-widest">
+                        Hech narsa topilmadi
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={() => toast.info("Yangi do'st qo'shish jarayoni... (Tez kunda)")}
+                    className="w-full py-5 mt-4 rounded-3xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center gap-3 text-white/40 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                  >
+                    <Plus className="w-4 h-4 group-hover:scale-125 transition-transform" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em]">Yangi do'st qo'shish</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-black uppercase tracking-tighter text-white">Do'stlik Takliflari</h3>
+                    <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                      <Bell className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  {friendRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      {friendRequests.map(request => (
+                        <div key={request.id} className="p-4 rounded-[28px] bg-[#0A0A0A] border border-white/5 flex flex-col gap-4 group hover:border-white/10 hover:bg-[#0D0D0D] transition-colors relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-duration-500" />
+                          <div className="flex items-center gap-4 relative z-10 w-full">
+                            <img src={request.avatar} alt={request.name} className="w-14 h-14 rounded-2xl object-cover border border-white/10 shadow-lg" referrerPolicy="no-referrer" />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-[13px] font-black uppercase tracking-tight text-white mb-1 truncate">{request.name}</h4>
+                              <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em] truncate">{request.xp} XP • Sportchi</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 relative z-10 w-full">
+                            <button 
+                              onClick={() => handleAcceptRequest(request)}
+                              className="flex-1 py-3.5 rounded-xl bg-primary text-black text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_25px_rgba(204,255,0,0.3)] hover:scale-[1.02]"
+                            >
+                              Qabul
+                            </button>
+                            <button 
+                              onClick={() => handleRejectRequest(request.id)}
+                              className="flex-1 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest active:scale-95 hover:bg-white/10 hover:border-white/20 transition-all"
+                            >
+                              Rad etish
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                      <div className="w-20 h-20 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center text-white/10">
+                        <Users className="w-8 h-8 opacity-20" />
+                      </div>
+                      <p className="text-[11px] font-black text-white/20 uppercase tracking-[0.2em] max-w-[200px] leading-relaxed italic">
+                        Hozircha yangi takliflar yo'q...
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 

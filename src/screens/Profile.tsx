@@ -19,10 +19,12 @@ import {
   AlertCircle, LogOut, Copy
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/src/lib/utils";
+import { useActiveFrame } from "../lib/hooks";
+import { cn, getFrameClasses } from "@/src/lib/utils";
 import { ColorfulBadge, GreyBadge } from "../components/PremiumBadges";
 import TacticalGlobe from "../components/TacticalGlobe";
 import { GhostBar } from "../components/GhostBar";
+import { AvatarFrame } from "../components/AvatarFrame";
 import { TacticalSparkline } from "../components/TacticalSparkline";
 import { WeeklyProgress } from "../components/WeeklyProgress";
 
@@ -4782,6 +4784,17 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("Asosiy");
   const [uzVoice, setUzVoice] = useState<SpeechSynthesisVoice | null>(null);
 
+  const activeAvatarFrame = useActiveFrame();
+  
+  const handleRemoveActiveFrame = () => {
+    localStorage.removeItem("activeAvatarFrame");
+    window.dispatchEvent(new Event('activeFrameUpdate'));
+    window.dispatchEvent(new Event('storage'));
+    toast.success("Ramka olib tashlandi", {
+      icon: <Trash2 className="w-4 h-4 text-white" />
+    });
+  };
+
   useEffect(() => {
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
@@ -7355,27 +7368,39 @@ export default function Profile() {
             className="flex items-center gap-5"
           >
             {/* Avatar with Neon Glow */}
-            <div className="relative group">
-              <div 
-                className="w-20 h-20 rounded-full border-[3px] border-primary shadow-[0_0_20px_rgba(204,255,0,0.3)] overflow-hidden cursor-pointer relative"
-                onClick={(e) => { e.stopPropagation(); setIsEditProfileOpen(true); }}
-              >
-                <img 
+            <div className="relative group p-[4px]">
+              <div className="relative group">
+                <AvatarFrame 
                   src={userData.avatar} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  referrerPolicy="no-referrer"
+                  frameId={activeAvatarFrame} 
+                  size="lg" 
+                  className="cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); setIsEditProfileOpen(true); }}
+                  showStatus={true}
+                  level={45}
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary border-[3px] border-[#0A0A0A] flex items-center justify-center text-[9px] font-black text-black shadow-xl">
-                45
+                
+                {activeAvatarFrame && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveActiveFrame();
+                    }}
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white border-2 border-surface z-50 shadow-lg"
+                    title="Ramkani olib tashlash"
+                  >
+                    <X className="w-3 h-3" />
+                  </motion.button>
+                )}
               </div>
             </div>
 
             {/* Info */}
+
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-black uppercase tracking-tight text-white">

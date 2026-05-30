@@ -1,8 +1,11 @@
 import React, { useState, useRef } from "react";
 import { motion } from "motion/react";
 import { Search, Bell, MoreHorizontal, Heart, MessageCircle, Share2, Bookmark } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/src/components/BottomNav";
-import { cn } from "@/src/lib/utils";
+import { AvatarFrame } from "@/src/components/AvatarFrame";
+import { useActiveFrame } from "@/src/lib/hooks";
+import { cn, getFrameClasses } from "@/src/lib/utils";
 
 const POSTS = [
   {
@@ -48,6 +51,8 @@ const POSTS = [
 ];
 
 export default function Feed() {
+  const navigate = useNavigate();
+  const activeFrame = useActiveFrame();
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const scrollAccumulator = useRef(0);
   const lastScrollY = useRef(0);
@@ -103,10 +108,19 @@ export default function Feed() {
           <button className="p-2 text-white/40 hover:text-primary transition-colors">
             <Search className="w-5 h-5" />
           </button>
-          <button className="relative p-2 text-white/40 hover:text-primary transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2 flex h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(204,255,0,0.5)]" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button className="relative p-2 text-white/40 hover:text-primary transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2 right-2 flex h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(204,255,0,0.5)]" />
+            </button>
+            <AvatarFrame 
+              src="/badges/avazov.JPG" 
+              frameId={activeFrame} 
+              size="sm" 
+              className="cursor-pointer"
+              onClick={() => navigate('/profile')}
+            />
+          </div>
         </div>
       </motion.header>
 

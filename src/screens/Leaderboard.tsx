@@ -3,7 +3,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Share2, Trophy } from "lucide-react";
 import BottomNav from "@/src/components/BottomNav";
 import UserProfile from "@/src/components/UserProfile";
-import { cn } from "@/src/lib/utils";
+import { AvatarFrame } from "@/src/components/AvatarFrame";
+import { cn, getFrameClasses } from "@/src/lib/utils";
+
+import { useActiveFrame } from "@/src/lib/hooks";
 
 const RUNNER_DATA = {
   GLOBAL: {
@@ -54,6 +57,7 @@ const RUNNER_DATA = {
 };
 
 export default function Leaderboard() {
+  const activeFrame = useActiveFrame();
   const [activeTab, setActiveTab] = useState<keyof typeof RUNNER_DATA>("GLOBAL");
   const [metricTab, setMetricTab] = useState<"MASOFA" | "HUDUD" | "QADAM">("MASOFA");
   const [isLoading, setIsLoading] = useState(false);
@@ -220,12 +224,15 @@ export default function Leaderboard() {
                 onClick={() => setSelectedUser({ ...runner, clan: "Runners Club" })}
               >
                 <div className="relative mb-3 cursor-pointer">
-                  <div className={`rounded-full p-1 border ${
-                    runner.rank === 1 ? "h-24 w-24 border-primary shadow-[0_0_30px_rgba(204,255,0,0.3)]" : 
-                    runner.rank === 2 ? "h-16 w-16 border-white/20" : "h-16 w-16 border-white/10"
-                  }`}>
-                    <img src={runner.avatar} alt={runner.name} className="w-full h-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                  </div>
+                  <AvatarFrame 
+                    src={runner.avatar} 
+                    frameId={null} 
+                    size={runner.rank === 1 ? "xl" : "lg"}
+                    className={cn(
+                      runner.rank === 1 && "shadow-[0_0_30px_rgba(204,255,0,0.3)]",
+                      "grayscale opacity-80"
+                    )}
+                  />
                   <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 italic-black px-2 rounded-sm text-[9px] uppercase tracking-widest ${
                     runner.rank === 1 ? "bg-primary text-black py-1 text-[10px] flex items-center gap-1 shadow-lg" : 
                     runner.rank === 2 ? "bg-white/20 text-white" : "bg-white/10 text-white/60"
@@ -258,9 +265,12 @@ export default function Leaderboard() {
               )}
             >
               <span className="text-xs font-mono text-white/20 w-6">{runner.rank}</span>
-              <div className="h-12 w-12 rounded-full border border-white/10 p-0.5">
-                <img src={runner.avatar} alt={runner.name} className="h-full w-full rounded-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-              </div>
+              <AvatarFrame 
+                src={runner.avatar} 
+                frameId={null} 
+                size="sm" 
+                className="grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all border-none"
+              />
               <div className="flex-1">
                 <p className="font-bold text-[13px] text-white uppercase tracking-tight">{runner.name}</p>
                 <p className="text-[9px] text-white/30 font-mono uppercase tracking-widest">{runner.runs}</p>
@@ -280,17 +290,16 @@ export default function Leaderboard() {
           <div className="max-w-lg mx-auto bg-primary h-[65px] px-4 rounded-2xl flex items-center gap-4 shadow-[0_10px_30px_rgba(204,255,0,0.3)] border border-white/20">
             <span className="text-xs font-mono text-black/40 w-6">12</span>
             <div className="relative">
-              <div className="h-12 w-12 rounded-full border-2 border-black/20 p-0.5">
-                <img 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1McbeGl_zKRyvbTBhaRogz_HUGkJNaBnn7Vg1nOrAJCNJMC9dfXG6LaQTRIZ0PS03twJTc9zJKvWoRmn2FKZwV17-3TXe853ntB1G_-ZjLEU20lEvtmhpiw8tVolbaZOyvRiECaTnqw5QQ-CzLbNPKNGn1WvhsNR4Ikr415BjmEJTfogoJfAa3r4f47A_T62pswlqed8InLJ_lb6wlyl8Hn9HAnaCjmKs-cuTgQ28QfrN1FIFfWuGu0IIOhZ5PvUfHSmzC4Fpx9Ss" 
-                  alt="Me" 
-                  className="h-full w-full rounded-full object-cover"
-                />
-              </div>
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-black border-2 border-primary rounded-full" />
+              <AvatarFrame 
+                src="/badges/avazov.JPG" 
+                frameId={activeFrame} 
+                size="md" 
+                className="shrink-0"
+              />
+              <div className="absolute -top-1 -right-1 h-4 w-4 bg-black border-2 border-primary rounded-full z-10" />
             </div>
             <div className="flex-1">
-              <p className="italic-black text-black text-[13px] uppercase tracking-tight">YOU (OLIMJON)</p>
+              <p className="italic-black text-black text-[13px] uppercase tracking-tight line-clamp-1">YOU (AVAZOV OG'ABEK)</p>
               <p className="text-[9px] text-black/60 font-mono font-bold uppercase tracking-widest">Top 15% this week</p>
             </div>
             <div className="text-right">

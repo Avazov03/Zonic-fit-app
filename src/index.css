@@ -15,6 +15,22 @@
   --radius-3xl: 2rem;
 }
 
+/* THEME CLASSES */
+.theme-cyberpunk {
+  --color-primary: #f3f30b;
+  --color-surface: #000000;
+  --color-card: #0d0d0d;
+}
+
+.theme-cyberpunk body {
+  background-image: radial-gradient(rgba(243, 243, 11, 0.05) 1px, transparent 1px);
+}
+
+.theme-cyberpunk .italic-black {
+  color: var(--color-primary);
+  text-shadow: 0 0 10px rgba(243, 243, 11, 0.5);
+}
+
 @layer base {
   html, body, #root {
     height: 100%;
@@ -82,5 +98,86 @@
   }
   .animate-draw {
     animation: draw 2s ease-out forwards;
+  }
+
+  @keyframes shimmer-fast {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer-fast 2s infinite linear;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; filter: brightness(1.2) saturate(1.2); }
+    50% { opacity: 0.8; filter: brightness(0.9) saturate(0.9); }
+    25%, 75% { opacity: 0.95; filter: brightness(1.1); }
+  }
+  .animate-flicker {
+    animation: flicker 0.1s infinite;
+  }
+
+  @keyframes neon-hue {
+    from { filter: hue-rotate(0deg); }
+    to { filter: hue-rotate(360deg); }
+  }
+  .animate-neon-flow {
+    animation: neon-hue 4s linear infinite;
+  }
+
+  @keyframes neon-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-neon-rotate {
+    animation: neon-rotate 3s linear infinite;
+  }
+
+  @keyframes fire-movement {
+    0% { background-position: 0% 100%; filter: blur(4px) brightness(1); }
+    50% { background-position: 100% 0%; filter: blur(6px) brightness(1.2); }
+    100% { background-position: 0% 100%; filter: blur(4px) brightness(1); }
+  }
+  .animate-fire-flow {
+    background-size: 200% 200%;
+    animation: fire-movement 1.5s ease-in-out infinite;
+  }
+
+  @keyframes ember-float {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-40px) translateX(var(--tx, 10px)) scale(0.5); opacity: 0; }
+  }
+  .animate-ember {
+    animation: ember-float 2s linear infinite;
+  }
+
+  @keyframes neon-pulse-soft {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 10px var(--neon-color)); }
+    50% { opacity: 0.9; filter: drop-shadow(0 0 15px var(--neon-color)) brightness(1.1); }
+  }
+  .animate-neon-pulse {
+    animation: neon-pulse-soft 2s ease-in-out infinite;
+  }
+
+  @keyframes tube-flicker {
+    0%, 100% { opacity: 1; }
+    98% { opacity: 1; }
+    98.5% { opacity: 0.4; }
+    99% { opacity: 1; }
+    99.5% { opacity: 0.2; }
+  }
+  .animate-tube-flicker {
+    animation: tube-flicker 8s infinite;
+  }
+
+  @keyframes icicle-glimmer {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.5) drop-shadow(0 0 5px #fff); }
+  }
+  .animate-ice-glimmer {
+    animation: icicle-glimmer 3s ease-in-out infinite;
   }
 }

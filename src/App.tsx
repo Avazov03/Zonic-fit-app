@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { CustomToaster } from "./components/Toaster";
+import { cn } from "@/src/lib/utils";
 import Login from "./screens/Login";
 import Register from "./screens/Register";
 import Onboarding from "./screens/Onboarding";
@@ -10,7 +12,7 @@ import Leaderboard from "./screens/Leaderboard";
 import MapRun from "./screens/MapRun";
 import ActiveRun from "./screens/ActiveRun";
 import Clan from "./screens/Clan";
-import MarketComingSoon from "./screens/MarketComingSoon";
+import Market from "./screens/Market";
 import PlanDetail from "./screens/PlanDetail";
 import EventDetail from "./screens/EventDetail";
 import NewsDetail from "./screens/NewsDetail";
@@ -25,9 +27,29 @@ function StatsPlaceholder() {
 }
 
 export default function App() {
+  const activeTheme = localStorage.getItem("activeTheme");
+
+  useEffect(() => {
+    // Global reset once to satisfy user request for a fresh start
+    const hasReset = localStorage.getItem("globalMarketReset_v4");
+    if (!hasReset) {
+      localStorage.setItem("userInventory", "[]");
+      localStorage.removeItem("activeAvatarFrame");
+      localStorage.setItem("globalMarketReset_v4", "true");
+      window.dispatchEvent(new Event('activeFrameUpdate'));
+      window.dispatchEvent(new Event('storage'));
+    }
+  }, []);
+
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#050505] overflow-hidden">
-      <div className="relative h-full w-full max-w-[430px] overflow-hidden bg-surface flex flex-col shadow-2xl transform-none" style={{ transform: 'translate3d(0,0,0)' }}>
+    <div className={cn(
+      "flex h-screen w-full items-center justify-center bg-[#050505] overflow-hidden",
+      activeTheme === 't1' && "theme-cyberpunk"
+    )}>
+      <div className={cn(
+        "relative h-full w-full max-w-[430px] overflow-hidden bg-surface flex flex-col shadow-2xl transform-none",
+        activeTheme === 't1' && "theme-cyberpunk"
+      )} style={{ transform: 'translate3d(0,0,0)' }}>
         <Router>
           <CustomToaster />
           <Routes>
@@ -42,7 +64,7 @@ export default function App() {
             <Route path="/active-run" element={<ActiveRun />} />
             <Route path="/stats" element={<StatsPlaceholder />} />
             <Route path="/clan" element={<Clan />} />
-            <Route path="/market" element={<MarketComingSoon />} />
+            <Route path="/market" element={<Market />} />
             <Route path="/plan/:id" element={<PlanDetail />} />
             <Route path="/event/:id" element={<EventDetail />} />
             <Route path="/news/:id" element={<NewsDetail />} />

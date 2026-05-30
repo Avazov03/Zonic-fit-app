@@ -26,6 +26,7 @@ export const toast = Object.assign(
     error: (msg: string, options?: { icon?: React.ReactNode, duration?: number }) => addToast(msg, 'error', options),
     info: (msg: string, options?: { icon?: React.ReactNode, duration?: number }) => addToast(msg, 'info', options),
     warning: (msg: string, options?: { icon?: React.ReactNode, duration?: number }) => addToast(msg, 'warning', options),
+    loading: (msg: string, options?: { icon?: React.ReactNode, duration?: number }) => addToast(msg, 'info', { duration: 0, ...options }),
     dismiss: (id: string) => {
       toasts = toasts.filter(t => t.id !== id);
       emit();

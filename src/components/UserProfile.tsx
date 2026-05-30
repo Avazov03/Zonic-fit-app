@@ -1,6 +1,9 @@
 import { motion, AnimatePresence } from "motion/react";
 import { X, MessageCircle, UserPlus, Trophy, Users, MapPin, Activity, Zap, Award, BarChart2, ChevronRight, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { AvatarFrame } from "./AvatarFrame";
+import { getFrameClasses } from "@/src/lib/utils";
 
 interface UserProfileProps {
   isOpen: boolean;
@@ -13,6 +16,7 @@ interface UserProfileProps {
     runs: string;
     rank: number;
     clan: string;
+    frame?: string | null;
   };
 }
 
@@ -32,6 +36,8 @@ const ACHIEVEMENTS = [
 
 export default function UserProfile({ isOpen, onClose, user }: UserProfileProps) {
   const navigate = useNavigate();
+  const [isAvatarZoomed, setIsAvatarZoomed] = useState(false);
+  const [isCoverZoomed, setIsCoverZoomed] = useState(false);
 
   const handleOpenFullProfile = () => {
     onClose();
@@ -57,7 +63,7 @@ export default function UserProfile({ isOpen, onClose, user }: UserProfileProps)
             className="absolute bottom-0 left-0 right-0 h-[90vh] w-full max-w-md mx-auto bg-surface border-t border-white/10 rounded-t-3xl z-[101] overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="relative h-32">
+            <div className="relative h-32 cursor-zoom-in" onClick={() => setIsCoverZoomed(true)}>
               <img 
                 src="https://picsum.photos/seed/running/800/400" 
                 alt="Background" 
@@ -77,9 +83,13 @@ export default function UserProfile({ isOpen, onClose, user }: UserProfileProps)
               </button>
 
               <div className="absolute -bottom-10 left-6">
-                <div className="h-24 w-24 rounded-full border-4 border-surface p-1 bg-surface">
-                  <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full object-cover" />
-                </div>
+                <AvatarFrame 
+                  src={user.avatar} 
+                  frameId={user.frame} 
+                  size="xl" 
+                  className="cursor-zoom-in active:scale-95 transition-transform"
+                  onClick={(e) => { e.stopPropagation(); setIsAvatarZoomed(true); }}
+                />
               </div>
             </div>
 
@@ -199,6 +209,83 @@ export default function UserProfile({ isOpen, onClose, user }: UserProfileProps)
               </div>
             </div>
           </motion.div>
+
+          {/* Zoom View Overlay */}
+          <AnimatePresence>
+            {isAvatarZoomed && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAvatarZoomed(false)}
+                className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl cursor-zoom-out"
+              >
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="relative w-full max-w-[400px] aspect-square rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img 
+                    src={user.avatar} 
+                    alt="Avatar Large" 
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Profile Info in zoom view */}
+                  <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-white font-black uppercase tracking-tight text-lg">{user.name}</h3>
+                        <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{user.rank}-O'RIN • {user.clan}</p>
+                      </div>
+                      <button 
+                        onClick={() => setIsAvatarZoomed(false)}
+                        className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Cover Zoom Overlay */}
+          <AnimatePresence>
+            {isCoverZoomed && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsCoverZoomed(false)}
+                className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl cursor-zoom-out"
+              >
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  className="relative w-full max-w-[600px] aspect-video rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-white/5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img 
+                    src="https://picsum.photos/seed/running/800/400" 
+                    alt="Cover Large" 
+                    className="w-full h-full object-cover"
+                  />
+                  <button 
+                    onClick={() => setIsCoverZoomed(false)}
+                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </AnimatePresence>
